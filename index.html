@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Consegne Pane</title>
+<meta name="theme-color" content="#D85A30">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Consegne%20Pane%22%2C%22short_name%22%3A%22Consegne%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23D85A30%22%2C%22theme_color%22%3A%22%23D85A30%22%7D">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Crect%20width='100'%20height='100'%20fill='%23D85A30'/%3E%3Ctext%20y='72'%20x='50'%20font-size='60'%20text-anchor='middle'%3E%F0%9F%8D%9E%3C/text%3E%3C/svg%3E">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f4f0;color:#1a1a1a}
+#app{height:100%;display:flex;flex-direction:column}
+.page{display:none;flex-direction:column;height:100%;overflow:hidden}
+.page.active{display:flex}
+
+/* TOPBAR */
+.topbar{background:#D85A30;color:#fff;padding:14px 16px 12px;flex-shrink:0}
+.topbar h1{font-size:17px;font-weight:600}
+.topbar .sub{font-size:12px;opacity:0.8;margin-top:2px}
+.topbar-row{display:flex;align-items:center;gap:10px}
+.back-btn{background:none;border:none;color:#fff;font-size:15px;padding:0;cursor:pointer;display:flex;align-items:center;gap:4px}
+
+/* SCROLL BODY */
+.scroll-body{flex:1;overflow-y:auto;padding:12px;-webkit-overflow-scrolling:touch}
+
+/* BOTTOM NAV */
+.bottomnav{display:flex;background:#fff;border-top:0.5px solid #e0e0e0;flex-shrink:0}
+.nav-btn{flex:1;padding:10px 0 12px;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:#888;font-size:10px}
+.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn.active{color:#D85A30}
+
+/* STORE GRID */
+.store-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.store-card{background:#fff;border-radius:14px;border:1.5px solid #e8e8e8;padding:16px 12px;text-align:center;cursor:pointer;transition:transform 0.1s}
+.store-card:active{transform:scale(0.97)}
+.store-card .name{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
+.store-card .total{font-size:20px;font-weight:700;color:#D85A30}
+.store-card .term-badge{font-size:10px;margin-top:4px;padding:2px 8px;border-radius:20px;display:inline-block}
+.term-oggi{background:#fff3ee;color:#D85A30}
+.term-sett{background:#e8f4fd;color:#1a6fa8}
+.term-mese{background:#edf7ed;color:#2a7a2a}
+
+/* SECTION HEADERS */
+.section-head{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 8px}
+.section-head:first-child{margin-top:0}
+
+/* STORE DETAIL */
+.store-hero{background:#D85A30;color:#fff;padding:16px;text-align:center;flex-shrink:0}
+.store-hero .amount{font-size:38px;font-weight:700}
+.store-hero .label{font-size:12px;opacity:0.85;margin-top:2px}
+.store-hero .term{font-size:11px;background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:20px;display:inline-block;margin-top:6px}
+
+/* DELIVERY ROWS */
+.delivery-row{background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.delivery-row .top{display:flex;justify-content:space-between;align-items:baseline}
+.delivery-row .bread{font-size:14px;font-weight:600}
+.delivery-row .amount{font-size:14px;font-weight:700;color:#D85A30}
+.delivery-row .meta{font-size:12px;color:#888;margin-top:3px;display:flex;gap:10px}
+.who-badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.who-0{background:#fff3ee;color:#c24a1e}
+.who-1{background:#e8f4fd;color:#1a6fa8}
+.who-2{background:#edf7ed;color:#2a7a2a}
+.who-3{background:#f3f0fd;color:#5b3fc7}
+
+/* FAB */
+.fab{position:fixed;bottom:72px;right:16px;width:58px;height:58px;background:#D85A30;border-radius:50%;border:none;color:#fff;font-size:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(216,90,48,0.4);z-index:100}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:none;align-items:flex-end}
+.modal-overlay.open{display:flex}
+.modal{background:#f5f4f0;border-radius:20px 20px 0 0;width:100%;max-height:92vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom)}
+.modal-head{padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:center;background:#f5f4f0;position:sticky;top:0}
+.modal-head h2{font-size:17px;font-weight:600}
+.modal-close{background:none;border:none;font-size:22px;color:#888;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:0 12px 12px}
+
+/* BREAD TYPE LIST */
+.bread-list{display:flex;flex-direction:column;gap:8px}
+.bread-item{background:#fff;border-radius:12px;border:2px solid transparent;padding:13px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.bread-item.selected{border-color:#D85A30;background:#fff8f6}
+.bread-item .bname{font-size:15px;font-weight:500}
+.bread-item .bprice{font-size:13px;color:#888}
+.bread-item.selected .bprice{color:#D85A30}
+
+/* WEIGHT INPUT */
+.weight-section{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px}
+.weight-label{font-size:12px;color:#888;margin-bottom:10px}
+.weight-display{font-size:48px;font-weight:700;color:#1a1a1a;text-align:center;margin-bottom:12px;min-height:60px}
+.weight-display .unit{font-size:20px;font-weight:400;color:#888}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.numpad-btn{background:#f5f4f0;border:none;border-radius:12px;height:52px;font-size:20px;font-weight:500;cursor:pointer;color:#1a1a1a}
+.numpad-btn:active{background:#e8e6e0}
+.numpad-btn.del{font-size:16px;color:#888}
+.numpad-btn.special{font-size:14px;color:#D85A30;font-weight:600}
+
+/* TOTALE PREVIEW */
+.total-preview{background:#D85A30;color:#fff;border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.total-preview .label{font-size:13px;opacity:0.85}
+.total-preview .amount{font-size:22px;font-weight:700}
+
+/* CONFIRM BTN */
+.btn-confirm{width:100%;background:#D85A30;color:#fff;border:none;border-radius:14px;padding:17px;font-size:17px;font-weight:600;cursor:pointer}
+.btn-confirm:disabled{background:#ccc}
+
+/* REPORT */
+.report-card{background:#fff;border-radius:14px;margin-bottom:10px;overflow:hidden}
+.report-card .rhead{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #f0f0f0}
+.report-card .rname{font-size:15px;font-weight:600}
+.report-card .rtotal{font-size:16px;font-weight:700;color:#D85A30}
+.report-row{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #f8f8f8;font-size:13px}
+.report-row:last-child{border-bottom:none}
+.report-row .rleft{color:#555}
+.report-row .rright{font-weight:500;color:#1a1a1a}
+.btn-secondary{width:100%;background:#fff;color:#D85A30;border:1.5px solid #D85A30;border-radius:14px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;margin-top:12px}
+
+/* SETTINGS */
+.settings-list{display:flex;flex-direction:column;gap:8px}
+.settings-item{background:#fff;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.settings-item .si-left{display:flex;flex-direction:column;gap:2px}
+.settings-item .si-name{font-size:15px;font-weight:500}
+.settings-item .si-sub{font-size:12px;color:#888}
+.settings-item .si-arrow{color:#ccc;font-size:18px}
+.btn-add{width:100%;background:#fff;border:1.5px dashed #D85A30;color:#D85A30;border-radius:12px;padding:14px;font-size:15px;font-weight:500;cursor:pointer;margin-top:8px}
+
+/* FORM FIELDS */
+.field{margin-bottom:12px}
+.field label{font-size:12px;color:#888;display:block;margin-bottom:5px}
+.field input,.field select{width:100%;background:#fff;border:0.5px solid #ddd;border-radius:10px;padding:12px 14px;font-size:15px;color:#1a1a1a;-webkit-appearance:none}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+
+/* PRICE TABLE */
+.price-table{background:#fff;border-radius:14px;overflow:hidden}
+.price-row{display:flex;align-items:center;padding:11px 14px;border-bottom:0.5px solid #f8f8f8;gap:10px}
+.price-row:last-child{border-bottom:none}
+.price-row .pname{flex:1;font-size:14px}
+.price-row input{width:72px;background:#f5f4f0;border:none;border-radius:8px;padding:7px 10px;font-size:14px;text-align:right;color:#1a1a1a}
+
+/* LOGIN */
+.login-page{background:#D85A30;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 20px;gap:16px;text-align:center}
+.login-page h1{color:#fff;font-size:26px;font-weight:700}
+.login-page p{color:rgba(255,255,255,0.85);font-size:14px;margin-bottom:8px}
+.login-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.login-btn{background:#fff;border:none;border-radius:14px;padding:20px 12px;font-size:16px;font-weight:600;color:#D85A30;cursor:pointer}
+.login-btn:active{transform:scale(0.97)}
+.app-code-box{background:rgba(255,255,255,0.15);border-radius:12px;padding:12px 16px;color:#fff;font-size:13px;text-align:left;width:100%}
+.app-code-box .code{font-family:monospace;font-size:15px;font-weight:600;margin-top:4px;letter-spacing:0.1em}
+
+/* SETUP */
+.setup-page{background:#D85A30;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 20px;gap:16px;text-align:center;height:100%}
+.setup-page h1{color:#fff;font-size:24px;font-weight:700}
+.setup-page p{color:rgba(255,255,255,0.85);font-size:14px}
+.setup-btn{width:100%;background:#fff;border:none;border-radius:14px;padding:18px;font-size:16px;font-weight:600;color:#D85A30;cursor:pointer}
+.setup-input{width:100%;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.4);border-radius:12px;padding:14px;font-size:16px;color:#fff;text-align:center;letter-spacing:0.1em}
+.setup-input::placeholder{color:rgba(255,255,255,0.5)}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:40px 20px;color:#aaa;font-size:14px}
+
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:500;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* DELETE BTN */
+.btn-delete{background:#fff;color:#e23535;border:1.5px solid #e23535;border-radius:12px;padding:12px;width:100%;font-size:14px;font-weight:500;cursor:pointer;margin-top:8px}
+
+.colleghi-section{background:#fff;border-radius:14px;padding:14px;margin-bottom:10px}
+.colleghi-section h3{font-size:13px;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em}
+.colleghi-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid #f5f4f0}
+.colleghi-row:last-child{border-bottom:none}
+.colleghi-row .cname{font-size:14px;font-weight:500}
+.colleghi-row .ckg{font-size:13px;color:#888}
+.colleghi-row .camt{font-size:13px;font-weight:600;color:#D85A30}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────
+const BREAD_TYPES = [
+  {id:'rosette',name:'Rosette'},
+  {id:'ciabatte',name:'Ciabatte'},
+  {id:'rosettine',name:'Rosettine'},
+  {id:'rosettine-int',name:'Rosettine integrali'},
+  {id:'ciabatte-int',name:'Ciabatte integrali'},
+  {id:'panini-latte',name:'Panini al latte'},
+  {id:'filoncini',name:'Filoncini'},
+  {id:'casereccio',name:'Pane casereccio'},
+  {id:'curcuma',name:'Pane curcuma'},
+  {id:'segale',name:'Pane di segale'},
+  {id:'cereali',name:'Pane cereali'},
+  {id:'pucce-olive',name:'Pucce con le olive'},
+]
+const TERMS = [{id:'oggi',label:'Pagamento oggi'},{id:'settimana',label:'Fine settimana'},{id:'mese',label:'Fine mese'}]
+const WHO_COLORS = ['who-0','who-1','who-2','who-3']
+
+// ─── STATE ────────────────────────────────────────────────────────
+let appCode = localStorage.getItem('appCode') || ''
+let myName = localStorage.getItem('myName') || ''
+let currentPage = 'home'
+let currentStoreId = null
+let gun, db, deliveriesNode, storesNode, teamNode, pricesNode
+
+let stores = {}
+let deliveries = {}
+let team = []
+let prices = {}
+
+// ─── GUN INIT ─────────────────────────────────────────────────────
+function initGun() {
+  gun = Gun(['https://gun-manhattan.herokuapp.com/gun','https://gun-us.herokuapp.com/gun'])
+  db = gun.get('panini-app-' + appCode)
+  storesNode = db.get('stores')
+  deliveriesNode = db.get('deliveries')
+  teamNode = db.get('team')
+  pricesNode = db.get('prices')
+
+  storesNode.map().on((data, id) => {
+    if (data === null) { delete stores[id]; render(); return }
+    if (data && id) { stores[id] = {...data, id}; render() }
+  })
+  deliveriesNode.map().on((data, id) => {
+    if (data === null) { delete deliveries[id]; render(); return }
+    if (data && id) { deliveries[id] = {...data, id}; render() }
+  })
+  teamNode.on((data) => {
+    if (data) { team = data.members ? data.members.split(',').filter(Boolean) : []; render() }
+  })
+  pricesNode.map().on((data, id) => {
+    if (data && id) {
+      if (!prices[id]) prices[id] = {}
+      prices[id] = {...prices[id], ...data}
+      render()
+    }
+  })
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────
+function today() {
+  return new Date().toLocaleDateString('it-IT')
+}
+function nowTs() {
+  return new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})
+}
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,6)
+}
+function fmt(n) {
+  return '€ ' + (+n).toFixed(2).replace('.',',')
+}
+function fmtKg(n) {
+  return (+n).toFixed(1).replace('.',',') + ' kg'
+}
+function toast(msg) {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.classList.add('show')
+  setTimeout(() => el.classList.remove('show'), 2200)
+}
+function todayDeliveries() {
+  return Object.values(deliveries).filter(d => d.date === today())
+}
+function storeTotal(storeId) {
+  return todayDeliveries()
+    .filter(d => d.storeId === storeId)
+    .reduce((s,d) => s + (parseFloat(d.amount)||0), 0)
+}
+function storeKg(storeId) {
+  return todayDeliveries()
+    .filter(d => d.storeId === storeId)
+    .reduce((s,d) => s + (parseFloat(d.kg)||0), 0)
+}
+function priceFor(storeId, breadId) {
+  return (prices[storeId] && prices[storeId][breadId]) ? parseFloat(prices[storeId][breadId]) : 0
+}
+function whoIndex(name) {
+  const i = team.indexOf(name)
+  return i >= 0 ? i % 4 : 0
+}
+function termLabel(term) {
+  const t = TERMS.find(x => x.id === term)
+  return t ? t.label : ''
+}
+function termClass(term) {
+  return term === 'oggi' ? 'term-oggi' : term === 'settimana' ? 'term-sett' : 'term-mese'
+}
+
+// ─── ROUTER ───────────────────────────────────────────────────────
+function goTo(page, storeId) {
+  currentPage = page
+  if (storeId) currentStoreId = storeId
+  render()
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app')
+  if (!appCode) { app.innerHTML = renderSetup(); return }
+  if (!myName) { app.innerHTML = renderLogin(); return }
+  app.innerHTML = renderShell()
+  bindEvents()
+}
+
+function renderShell() {
+  const renderers = {
+    home: renderHome,
+    store: renderStore,
+    report: renderReport,
+    settings: renderSettings,
+    editStore: renderEditStore,
+    editPrices: renderEditPrices,
+    editTeam: renderEditTeam,
+  }
+  return (renderers[currentPage] || renderHome)()
+}
+
+// ─── SETUP PAGE ───────────────────────────────────────────────────
+function renderSetup() {
+  return `<div class="setup-page" id="setup-page">
+    <div style="font-size:48px">🍞</div>
+    <h1>Consegne Pane</h1>
+    <p>Prima di tutto: crea un nuovo gruppo oppure unisciti a uno esistente.</p>
+    <button class="setup-btn" onclick="setupNew()">Crea nuovo gruppo</button>
+    <div style="color:rgba(255,255,255,0.6);font-size:13px">oppure</div>
+    <input class="setup-input" id="join-code" placeholder="CODICE GRUPPO" maxlength="8" style="text-transform:uppercase">
+    <button class="setup-btn" style="background:rgba(255,255,255,0.2);color:#fff" onclick="setupJoin()">Unisciti al gruppo</button>
+  </div>`
+}
+function setupNew() {
+  const code = Math.random().toString(36).slice(2,8).toUpperCase()
+  localStorage.setItem('appCode', code)
+  appCode = code
+  initGun()
+  render()
+}
+function setupJoin() {
+  const code = document.getElementById('join-code').value.trim().toUpperCase()
+  if (!code || code.length < 4) { alert('Inserisci il codice del gruppo'); return }
+  localStorage.setItem('appCode', code)
+  appCode = code
+  initGun()
+  render()
+}
+
+// ─── LOGIN PAGE ───────────────────────────────────────────────────
+function renderLogin() {
+  const names = team.length ? team : ['Persona 1','Persona 2','Persona 3','Persona 4']
+  return `<div class="login-page" id="login-page" style="height:100vh">
+    <div style="font-size:42px">🍞</div>
+    <h1>Chi sei?</h1>
+    <p>Scegli il tuo nome per iniziare le consegne di oggi.</p>
+    <div class="login-grid">
+      ${names.map(n => `<button class="login-btn" onclick="selectName('${n}')">${n}</button>`).join('')}
+    </div>
+    <div class="app-code-box">
+      Codice gruppo<br>
+      <span class="code">${appCode}</span>
+      <div style="font-size:11px;opacity:0.7;margin-top:4px">Condividilo con i colleghi</div>
+    </div>
+  </div>`
+}
+function selectName(name) {
+  myName = name
+  localStorage.setItem('myName', name)
+  render()
+}
+
+// ─── HOME ─────────────────────────────────────────────────────────
+function renderHome() {
+  const storeList = Object.values(stores)
+  const totaleGiorno = storeList.reduce((s,st) => s + storeTotal(st.id), 0)
+  const byTerm = (term) => storeList.filter(s => s.paymentTerm === term)
+
+  const renderGroup = (label, list) => {
+    if (!list.length) return ''
+    return `<div class="section-head">${label}</div>
+    <div class="store-grid">
+      ${list.map(s => {
+        const tot = storeTotal(s.id)
+        const kg = storeKg(s.id)
+        return `<div class="store-card" onclick="goTo('store','${s.id}')">
+          <div class="name">${s.name}</div>
+          <div class="total">${fmt(tot)}</div>
+          ${kg > 0 ? `<div style="font-size:11px;color:#888;margin-top:2px">${fmtKg(kg)}</div>` : ''}
+          <div><span class="term-badge ${termClass(s.paymentTerm)}">${termLabel(s.paymentTerm)}</span></div>
+        </div>`
+      }).join('')}
+    </div>`
+  }
+
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div style="flex:1">
+          <div class="sub">Ciao ${myName} · ${today()}</div>
+          <h1>Totale giornata: ${fmt(totaleGiorno)}</h1>
+        </div>
+        <button style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:10px;padding:7px 12px;font-size:13px;cursor:pointer" onclick="goTo('settings')">⚙️</button>
+      </div>
+    </div>
+    <div class="scroll-body">
+      ${storeList.length === 0 ? `<div class="empty">Nessun negozio configurato.<br>Vai in Impostazioni per aggiungerne uno.</div>` : ''}
+      ${renderGroup('Pagano oggi', byTerm('oggi'))}
+      ${renderGroup('Fine settimana', byTerm('settimana'))}
+      ${renderGroup('Fine mese', byTerm('mese'))}
+    </div>
+    ${renderBottomNav()}
+  </div>`
+}
+
+// ─── STORE DETAIL ─────────────────────────────────────────────────
+function renderStore() {
+  const store = stores[currentStoreId]
+  if (!store) { currentPage = 'home'; return renderHome() }
+  const tot = storeTotal(store.id)
+  const delivs = todayDeliveries().filter(d => d.storeId === store.id).sort((a,b) => b.ts - a.ts)
+
+  // Group by colleague
+  const byColleague = {}
+  delivs.forEach(d => {
+    if (!byColleague[d.who]) byColleague[d.who] = {kg:0, amount:0}
+    byColleague[d.who].kg += parseFloat(d.kg)||0
+    byColleague[d.who].amount += parseFloat(d.amount)||0
+  })
+
+  const colleagueRows = Object.entries(byColleague).map(([name,data]) =>
+    `<div class="colleghi-row">
+      <span class="cname">${name}</span>
+      <span class="ckg">${fmtKg(data.kg)}</span>
+      <span class="camt">${fmt(data.amount)}</span>
+    </div>`
+  ).join('')
+
+  const delivRows = delivs.map(d => {
+    const bread = BREAD_TYPES.find(b => b.id === d.breadId)
+    const wi = whoIndex(d.who)
+    return `<div class="delivery-row">
+      <div class="top">
+        <span class="bread">${bread ? bread.name : d.breadId}</span>
+        <span class="amount">${fmt(d.amount)}</span>
+      </div>
+      <div class="meta">
+        <span class="who-badge ${WHO_COLORS[wi]}">${d.who}</span>
+        <span>${fmtKg(d.kg)}</span>
+        <span>${d.time}</span>
+      </div>
+    </div>`
+  }).join('')
+
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <div class="topbar-row">
+        <button class="back-btn" onclick="goTo('home')">← Negozi</button>
+      </div>
+      <div style="margin-top:4px;font-size:18px;font-weight:700">${store.name}</div>
+    </div>
+    <div class="store-hero">
+      <div class="amount">${fmt(tot)}</div>
+      <div class="label">Totale oggi</div>
+      <div class="term">${termLabel(store.paymentTerm)}</div>
+    </div>
+    <div class="scroll-body">
+      ${Object.keys(byColleague).length > 0 ? `
+      <div class="colleghi-section">
+        <h3>Chi ha consegnato</h3>
+        ${colleagueRows}
+      </div>` : ''}
+      <div class="section-head">Consegne di oggi</div>
+      ${delivRows || '<div class="empty">Nessuna consegna ancora</div>'}
+    </div>
+    <button class="fab" onclick="openDelivery()">+</button>
+    ${renderBottomNav()}
+  </div>
+  ${renderDeliveryModal()}`
+}
+
+// ─── DELIVERY MODAL ───────────────────────────────────────────────
+let selBread = null
+let weightStr = ''
+
+function renderDeliveryModal() {
+  const store = stores[currentStoreId]
+  const price = selBread ? priceFor(currentStoreId, selBread) : 0
+  const kg = parseFloat(weightStr) || 0
+  const total = price * kg
+  const canConfirm = selBread && kg > 0
+
+  const breadItems = BREAD_TYPES.map(b => {
+    const p = priceFor(currentStoreId, b.id)
+    return `<div class="bread-item ${selBread === b.id ? 'selected' : ''}" onclick="selectBread('${b.id}')">
+      <span class="bname">${b.name}</span>
+      <span class="bprice">${p > 0 ? fmt(p)+'/kg' : 'prezzo non impostato'}</span>
+    </div>`
+  }).join('')
+
+  const wDisplay = weightStr ? weightStr + ' <span class="unit">kg</span>' : '<span style="color:#ccc">0</span><span class="unit"> kg</span>'
+
+  return `<div class="modal-overlay ${window._deliveryOpen ? 'open' : ''}" id="delivery-modal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Registra consegna</h2>
+        <button class="modal-close" onclick="closeDelivery()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="section-head">Tipo di pane</div>
+        <div class="bread-list">${breadItems}</div>
+        <div class="section-head" style="margin-top:16px">Peso (kg)</div>
+        <div class="weight-section">
+          <div class="weight-display">${wDisplay}</div>
+          <div class="numpad">
+            ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="numpad-btn" onclick="numpad('${n}')">${n}</button>`).join('')}
+            <button class="numpad-btn special" onclick="numpad('0.5')">+½</button>
+            <button class="numpad-btn" onclick="numpad('0')">0</button>
+            <button class="numpad-btn del" onclick="numpad('del')">⌫</button>
+          </div>
+        </div>
+        <div class="total-preview">
+          <span class="label">Totale consegna</span>
+          <span class="amount">${fmt(total)}</span>
+        </div>
+        <button class="btn-confirm" ${canConfirm ? '' : 'disabled'} onclick="confirmDelivery()">Conferma consegna</button>
+      </div>
+    </div>
+  </div>`
+}
+
+function openDelivery() {
+  selBread = null
+  weightStr = ''
+  window._deliveryOpen = true
+  render()
+}
+function closeDelivery() {
+  window._deliveryOpen = false
+  render()
+}
+function selectBread(id) {
+  selBread = id
+  render()
+}
+function numpad(val) {
+  if (val === 'del') {
+    weightStr = weightStr.slice(0,-1)
+  } else if (val === '0.5') {
+    const cur = parseFloat(weightStr) || 0
+    weightStr = (cur + 0.5).toString()
+  } else {
+    if (weightStr.includes('.') && val === '.') return
+    if (weightStr.length >= 5) return
+    weightStr += val
+  }
+  render()
+}
+function confirmDelivery() {
+  const store = stores[currentStoreId]
+  if (!selBread || !weightStr) return
+  const kg = parseFloat(weightStr)
+  if (!kg) return
+  const price = priceFor(currentStoreId, selBread)
+  const amount = price * kg
+  const id = uid()
+  const delivery = {
+    storeId: currentStoreId,
+    breadId: selBread,
+    kg: kg,
+    amount: amount,
+    who: myName,
+    date: today(),
+    time: nowTs(),
+    ts: Date.now()
+  }
+  deliveriesNode.get(id).put(delivery)
+  closeDelivery()
+  toast('Consegna registrata ✓')
+}
+
+// ─── REPORT ───────────────────────────────────────────────────────
+function renderReport() {
+  const storeList = Object.values(stores)
+  const totGiorno = storeList.reduce((s,st) => s + storeTotal(st.id), 0)
+
+  const cards = storeList.map(store => {
+    const delivs = todayDeliveries().filter(d => d.storeId === store.id)
+    if (!delivs.length) return ''
+    const tot = storeTotal(store.id)
+    const byBread = {}
+    delivs.forEach(d => {
+      if (!byBread[d.breadId]) byBread[d.breadId] = {kg:0,amount:0}
+      byBread[d.breadId].kg += parseFloat(d.kg)||0
+      byBread[d.breadId].amount += parseFloat(d.amount)||0
+    })
+    const rows = Object.entries(byBread).map(([bid,data]) => {
+      const b = BREAD_TYPES.find(x => x.id === bid)
+      return `<div class="report-row">
+        <span class="rleft">${b ? b.name : bid}</span>
+        <span class="rright">${fmtKg(data.kg)} · ${fmt(data.amount)}</span>
+      </div>`
+    }).join('')
+    return `<div class="report-card">
+      <div class="rhead">
+        <span class="rname">${store.name}</span>
+        <span class="rtotal">${fmt(tot)}</span>
+      </div>
+      ${rows}
+    </div>`
+  }).join('')
+
+  const reportText = storeList.map(store => {
+    const delivs = todayDeliveries().filter(d => d.storeId === store.id)
+    if (!delivs.length) return ''
+    const tot = storeTotal(store.id)
+    const byBread = {}
+    delivs.forEach(d => {
+      if (!byBread[d.breadId]) byBread[d.breadId] = {kg:0,amount:0}
+      byBread[d.breadId].kg += parseFloat(d.kg)||0
+      byBread[d.breadId].amount += parseFloat(d.amount)||0
+    })
+    const lines = Object.entries(byBread).map(([bid,data]) => {
+      const b = BREAD_TYPES.find(x => x.id === bid)
+      return `  ${b ? b.name : bid}: ${data.kg.toFixed(1).replace('.',',')} kg = ${data.amount.toFixed(2).replace('.',',')} €`
+    }).join('\n')
+    return `${store.name}\n${lines}\nTotale: ${tot.toFixed(2).replace('.',',')} €`
+  }).filter(Boolean).join('\n\n')
+
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <h1>Resoconto giornaliero</h1>
+      <div class="sub">${today()} · Totale: ${fmt(totGiorno)}</div>
+    </div>
+    <div class="scroll-body">
+      ${cards || '<div class="empty">Nessuna consegna oggi</div>'}
+      ${cards ? `<button class="btn-secondary" onclick="copyReport()">📋 Copia resoconto</button>` : ''}
+    </div>
+    ${renderBottomNav()}
+  </div>
+  <textarea id="report-text" style="position:absolute;left:-9999px">${reportText}</textarea>`
+}
+function copyReport() {
+  const el = document.getElementById('report-text')
+  el.select()
+  document.execCommand('copy')
+  toast('Resoconto copiato ✓')
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────────
+function renderSettings() {
+  const storeList = Object.values(stores)
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo('home')">← Indietro</button>
+      <h1 style="margin-top:6px">Impostazioni</h1>
+    </div>
+    <div class="scroll-body">
+      <div class="section-head">Negozi</div>
+      <div class="settings-list">
+        ${storeList.map(s => `
+          <div class="settings-item" onclick="goTo('editStore','${s.id}')">
+            <div class="si-left">
+              <span class="si-name">${s.name}</span>
+              <span class="si-sub">${termLabel(s.paymentTerm)}</span>
+            </div>
+            <span class="si-arrow">›</span>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn-add" onclick="addStore()">+ Aggiungi negozio</button>
+
+      <div class="section-head">Team</div>
+      <div class="settings-list">
+        <div class="settings-item" onclick="goTo('editTeam')">
+          <div class="si-left">
+            <span class="si-name">Gestisci membri</span>
+            <span class="si-sub">${team.length > 0 ? team.join(', ') : 'Nessun membro'}</span>
+          </div>
+          <span class="si-arrow">›</span>
+        </div>
+      </div>
+
+      <div class="section-head">Il tuo profilo</div>
+      <div class="settings-list">
+        <div class="settings-item" onclick="changeName()">
+          <div class="si-left">
+            <span class="si-name">Nome attuale: ${myName}</span>
+            <span class="si-sub">Tocca per cambiare</span>
+          </div>
+          <span class="si-arrow">›</span>
+        </div>
+      </div>
+
+      <div class="app-code-box" style="margin-top:16px">
+        Codice gruppo (condividi con i colleghi)<br>
+        <span class="code" style="color:#D85A30">${appCode}</span>
+      </div>
+    </div>
+  </div>`
+}
+function changeName() {
+  myName = ''
+  localStorage.removeItem('myName')
+  render()
+}
+function addStore() {
+  currentStoreId = 'new'
+  goTo('editStore')
+}
+
+// ─── EDIT STORE ───────────────────────────────────────────────────
+function renderEditStore() {
+  const isNew = currentStoreId === 'new'
+  const store = isNew ? {name:'',paymentTerm:'settimana'} : (stores[currentStoreId] || {name:'',paymentTerm:'settimana'})
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo('settings')">← Impostazioni</button>
+      <h1 style="margin-top:6px">${isNew ? 'Nuovo negozio' : 'Modifica negozio'}</h1>
+    </div>
+    <div class="scroll-body">
+      <div class="field"><label>Nome negozio</label><input id="s-name" value="${store.name||''}" placeholder="es. Coop Ostuni"></div>
+      <div class="field"><label>Termine di pagamento</label>
+        <select id="s-term">
+          ${TERMS.map(t => `<option value="${t.id}" ${store.paymentTerm===t.id?'selected':''}>${t.label}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn-confirm" onclick="saveStore()">${isNew ? 'Crea negozio' : 'Salva modifiche'}</button>
+      ${!isNew ? `
+        <button class="btn-confirm" style="background:#fff;color:#D85A30;border:1.5px solid #D85A30;margin-top:10px" onclick="goTo('editPrices','${store.id}')">Gestisci prezzi al kg</button>
+        <button class="btn-delete" onclick="deleteStore('${store.id}')">Elimina negozio</button>
+      ` : ''}
+    </div>
+  </div>`
+}
+function saveStore() {
+  const name = document.getElementById('s-name').value.trim()
+  const term = document.getElementById('s-term').value
+  if (!name) { toast('Inserisci il nome del negozio'); return }
+  const id = currentStoreId === 'new' ? uid() : currentStoreId
+  storesNode.get(id).put({name, paymentTerm: term})
+  currentStoreId = id
+  toast('Salvato ✓')
+  goTo('settings')
+}
+function deleteStore(id) {
+  if (!confirm('Eliminare questo negozio?')) return
+  storesNode.get(id).put(null)
+  goTo('settings')
+}
+
+// ─── EDIT PRICES ──────────────────────────────────────────────────
+function renderEditPrices() {
+  const store = stores[currentStoreId]
+  if (!store) { currentPage = 'settings'; return renderSettings() }
+  const rows = BREAD_TYPES.map(b => {
+    const p = priceFor(currentStoreId, b.id)
+    return `<div class="price-row">
+      <span class="pname">${b.name}</span>
+      <input type="number" min="0" step="0.01" placeholder="0,00" value="${p||''}" data-bread="${b.id}" onchange="savePrice('${currentStoreId}',this.dataset.bread,this.value)">
+    </div>`
+  }).join('')
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo('editStore','${currentStoreId}')">← Negozio</button>
+      <h1 style="margin-top:6px">Prezzi — ${store.name}</h1>
+      <div class="sub">€ al kg per ogni tipo di pane</div>
+    </div>
+    <div class="scroll-body">
+      <div class="price-table">${rows}</div>
+    </div>
+  </div>`
+}
+function savePrice(storeId, breadId, val) {
+  const v = parseFloat(val)
+  if (isNaN(v)) return
+  if (!prices[storeId]) prices[storeId] = {}
+  prices[storeId][breadId] = v
+  pricesNode.get(storeId).get(breadId).put(v)
+}
+
+// ─── EDIT TEAM ────────────────────────────────────────────────────
+function renderEditTeam() {
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo('settings')">← Impostazioni</button>
+      <h1 style="margin-top:6px">Membri del team</h1>
+    </div>
+    <div class="scroll-body">
+      <p style="font-size:13px;color:#888;margin-bottom:12px">Inserisci i nomi separati da virgola. Verranno visualizzati come bottoni al login.</p>
+      <div class="field">
+        <label>Nomi (separati da virgola)</label>
+        <input id="team-input" value="${team.join(', ')}" placeholder="Mario, Luigi, Rosa, Anna">
+      </div>
+      <button class="btn-confirm" onclick="saveTeam()">Salva</button>
+    </div>
+  </div>`
+}
+function saveTeam() {
+  const val = document.getElementById('team-input').value
+  const members = val.split(',').map(s => s.trim()).filter(Boolean)
+  team = members
+  teamNode.put({members: members.join(',')})
+  toast('Team aggiornato ✓')
+  goTo('settings')
+}
+
+// ─── BOTTOM NAV ───────────────────────────────────────────────────
+function renderBottomNav() {
+  const navItems = [
+    {page:'home',label:'Negozi',icon:`<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>`},
+    {page:'report',label:'Resoconto',icon:`<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>`},
+    {page:'settings',label:'Impostazioni',icon:`<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>`},
+  ]
+  const activePage = ['editStore','editPrices','editTeam'].includes(currentPage) ? 'settings' : currentPage === 'store' ? 'home' : currentPage
+  return `<nav class="bottomnav">
+    ${navItems.map(n => `
+      <button class="nav-btn ${activePage === n.page ? 'active' : ''}" onclick="goTo('${n.page}')">
+        <svg viewBox="0 0 24 24">${n.icon}</svg>
+        ${n.label}
+      </button>
+    `).join('')}
+  </nav>`
+}
+
+// ─── BIND EVENTS ──────────────────────────────────────────────────
+function bindEvents() {
+  // exposed via onclick in HTML — no extra binding needed
+}
+
+// ─── START ────────────────────────────────────────────────────────
+if (appCode) initGun()
+render()
+</script>
+</body>
+</html>
