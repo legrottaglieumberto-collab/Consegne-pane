@@ -1327,8 +1327,10 @@ function renderSettings() {
   const storeList = Object.values(stores)
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
-      <button class="back-btn" onclick="goTo('home')">← Indietro</button>
-      <h1 style="margin-top:6px">Impostazioni</h1>
+      <div class="topbar-row">
+        <button class="back-btn" onclick="goTo('home')">←</button>
+        <h1 style="flex:1">Impostazioni</h1>
+      </div>
     </div>
     <div class="scroll-body">
       <div class="section-head">Negozi</div>
@@ -1375,8 +1377,71 @@ function renderSettings() {
         <button class="btn-secondary" onclick="copyCode()" style="margin-top:8px">📋 Copia solo il codice</button>
       </div>
       <button class="btn-add" onclick="joinGroupPrompt()" style="margin-top:12px">🔑 Entra in un altro gruppo (inserisci codice)</button>
+
+      <div class="section-head">Backup dei dati</div>
+      <div style="background:#fff;border-radius:14px;padding:14px">
+        <div style="font-size:12px;color:#888;margin-bottom:10px">Scarica un file con TUTTI i dati (negozi, prezzi, quantitativi standard, consegne, giri, team). Tienilo da parte: se cambi telefono o perdi i dati, lo ricarichi qui.</div>
+        <button class="btn-confirm" onclick="exportBackup()">💾 Scarica backup (file JSON)</button>
+        <button class="btn-secondary" onclick="document.getElementById('import-file').click()" style="margin-top:8px">📂 Ripristina da un backup</button>
+        <input id="import-file" type="file" accept="application/json,.json" style="display:none" onchange="importBackup(this.files[0])">
+      </div>
     </div>
   </div>`
+}
+// ─── BACKUP: scarica/ripristina tutti i dati in un file JSON ───────
+function exportBackup() {
+  const data = {
+    app: 'consegne-pane', version: 1, exportedAt: new Date().toISOString(),
+    appCode, stores, prices, standards, team, giros, deliveries, paid
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  const d = new Date()
+  const stamp = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')
+  a.href = url
+  a.download = 'consegne-pane-backup-' + stamp + '.json'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+  toast('Backup scaricato ✓')
+}
+function importBackup(file) {
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    let data
+    try { data = JSON.parse(e.target.result) } catch (err) { alert('File non valido: non è un backup di Consegne Pane.'); return }
+    if (!data || data.app !== 'consegne-pane' || !data.stores) { alert('File non valido: non è un backup di Consegne Pane.'); return }
+    const nStores = Object.keys(data.stores || {}).length
+    if (!confirm('Ripristinare ' + nStores + ' negozi e tutti i dati dal backup? I dati attuali verranno sovrascritti con quelli del file.')) return
+    restoreBackup(data)
+  }
+  reader.readAsText(file)
+}
+function restoreBackup(data) {
+  // dati in memoria
+  stores = data.stores || {}
+  prices = data.prices || {}
+  standards = data.standards || {}
+  team = data.team || []
+  giros = data.giros || {}
+  deliveries = data.deliveries || {}
+  paid = data.paid || {}
+  saveCache()
+  // ripubblica tutto su Gun (così torna anche sugli altri dispositivi del gruppo)
+  if (db) {
+    Object.entries(stores).forEach(([id, st]) => storesNode.get(id).put({name: st.name, paymentTerm: st.paymentTerm || 'giornaliero', note: st.note || ''}))
+    Object.entries(prices).forEach(([sid, bp]) => Object.entries(bp).forEach(([bid, v]) => pricesNode.get(sid).get(bid).put(v)))
+    Object.entries(standards).forEach(([sid, qp]) => Object.entries(qp).forEach(([pid, v]) => standardNode.get(sid).get(pid).put(v)))
+    if (team.length) teamNode.put({members: team.join(',')})
+    Object.entries(giros).forEach(([id, g]) => girosNode.get(id).put({name: g.name, storeIds: g.storeIds || '', date: g.date || '', who: g.who || '', ts: g.ts || Date.now(), personal: g.personal || ''}))
+    Object.entries(deliveries).forEach(([id, d]) => deliveriesNode.get(id).put({storeId: d.storeId, breadId: d.breadId, kg: d.kg, amount: d.amount, who: d.who, date: d.date, time: d.time, ts: d.ts, giroId: d.giroId || '', std: !!d.std}))
+    publishSnapshot()
+  }
+  toast('Backup ripristinato ✓')
+  goTo('home')
 }
 function joinGroupPrompt() {
   const code = prompt('Inserisci il codice del gruppo a cui vuoi accedere:')
@@ -1386,7 +1451,7 @@ function joinGroupPrompt() {
   if (c === appCode) { toast('Sei già in questo gruppo'); return }
   localStorage.setItem('appCode', c)
   appCode = c
-  stores = {}; deliveries = {}; prices = {}; team = []; giros = {}
+  stores = {}; deliveries = {}; prices = {}; standards = {}; paid = {}; team = []; giros = {}
   activeGiroId = null
   personalActiveGiroId = null; localStorage.removeItem('personalActiveGiroId')
   initGun()
