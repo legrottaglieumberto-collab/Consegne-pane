@@ -34,7 +34,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .nav-btn.active{color:#D85A30}
 
 /* STORE GRID */
-.store-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.store-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
 .store-card{background:#fff;border-radius:14px;border:1.5px solid #e8e8e8;padding:16px 12px;text-align:center;cursor:pointer;transition:transform 0.1s}
 .store-card:active{transform:scale(0.97)}
 .store-card .name{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
@@ -46,12 +46,21 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .done-check{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:#D85A30;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:700}
 .store-card.done .done-check{background:#2a7a2a}
 /* CASELLE APP (quadrate e colorate) */
-.store-card.app{aspect-ratio:1;border:none;border-radius:15px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px;box-shadow:0 2px 6px rgba(0,0,0,0.14)}
-.store-card.app .name{color:#fff;font-size:12px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.18);line-height:1.1}
-.store-card.app .total{color:#fff;font-size:15px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,0.18)}
-.store-card.app .kglbl{font-size:10px;color:rgba(255,255,255,0.92);font-weight:600}
-.store-card.app .done-check{background:#fff;color:#2a7a2a;width:18px;height:18px;font-size:10px}
+/* Schede negozio a DIMENSIONE FISSA: aspect-ratio 1 + overflow hidden,
+   il contenuto (nome lungo, note, prodotti) non cambia mai la misura */
+.store-card.app{aspect-ratio:1;border:none;border-radius:13px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:5px 4px;box-shadow:0 2px 5px rgba(0,0,0,0.14);overflow:hidden}
+.store-card.app .name{color:#fff;font-size:11px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.18);line-height:1.05;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.store-card.app .total{color:#fff;font-size:13px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,0.18)}
+.store-card.app .kglbl{font-size:9px;color:rgba(255,255,255,0.92);font-weight:600}
+.store-card.app .done-check{background:#fff;color:#2a7a2a;width:16px;height:16px;font-size:9px;top:4px;right:4px}
 .store-card.app.sel{outline:3px solid #1a1a1a;outline-offset:-2px}
+/* pillola 'Pagato' sulla scheda (toggle rapido) */
+.paid-pill{margin-top:2px;font-size:9px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(255,255,255,0.28);color:#fff;line-height:1.4;cursor:pointer}
+.paid-pill.on{background:#fff;color:#2a7a2a}
+/* puntino frequenza pagamento in alto a sinistra */
+.freq-dot{position:absolute;top:5px;left:5px;width:9px;height:9px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.85)}
+.freq-giornaliero{background:#fff}
+.freq-altro{background:transparent}
 .giro-hero{background:#fff;border-radius:16px;padding:28px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
 .giro-hero h2{font-size:19px;font-weight:700}
 .giro-hero p{font-size:13px;color:#888;margin-bottom:6px}
@@ -156,6 +165,24 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .price-row .pname{flex:1;font-size:14px}
 .price-row input{width:72px;background:#f5f4f0;border:none;border-radius:8px;padding:7px 10px;font-size:14px;text-align:right;color:#1a1a1a}
 
+/* TOGGLE SWITCH (Pagato) */
+.switch{position:relative;display:inline-block;width:52px;height:30px;flex-shrink:0}
+.switch input{display:none}
+.switch .track{position:absolute;inset:0;background:#ccc;border-radius:30px;transition:0.2s}
+.switch .knob{position:absolute;top:3px;left:3px;width:24px;height:24px;background:#fff;border-radius:50%;transition:0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.switch input:checked + .track{background:#2a7a2a}
+.switch input:checked + .track .knob{transform:translateX(22px)}
+.pay-row{background:#fff;border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pay-row .pl{font-size:15px;font-weight:600}
+
+/* STEPPER PREZZO/QUANTITÀ */
+.stepper{display:flex;align-items:center;gap:12px;justify-content:center;margin:6px 0 14px}
+.stepper button{width:54px;height:54px;border-radius:50%;border:none;background:#D85A30;color:#fff;font-size:28px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.stepper button:active{background:#bf4a24}
+.stepper .val{min-width:120px;text-align:center}
+.stepper .val input{width:120px;border:none;background:#f5f4f0;border-radius:10px;padding:10px;font-size:26px;font-weight:700;text-align:center;color:#1a1a1a}
+.note-area{width:100%;background:#fff;border:0.5px solid #ddd;border-radius:10px;padding:12px 14px;font-size:15px;color:#1a1a1a;min-height:80px;resize:vertical;font-family:inherit}
+
 /* LOGIN */
 .login-page{background:#D85A30;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 20px;gap:16px;text-align:center}
 .login-page h1{color:#fff;font-size:26px;font-weight:700}
@@ -200,23 +227,39 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────
+// Prodotti: pane e panini al latte si misurano in kg; taralli/biscotti/
+// friselle/caramelle a confezione (numero intero). unit: 'kg' | 'pz'
 const BREAD_TYPES = [
-  {id:'rosette',name:'Rosette'},
-  {id:'ciabatte',name:'Ciabatte'},
-  {id:'rosettine',name:'Rosettine'},
-  {id:'rosettine-int',name:'Rosettine integrali'},
-  {id:'ciabatte-int',name:'Ciabatte integrali'},
-  {id:'panini-latte',name:'Panini al latte'},
-  {id:'filoncini',name:'Filoncini'},
-  {id:'casereccio',name:'Pane casereccio'},
-  {id:'curcuma',name:'Pane curcuma'},
-  {id:'segale',name:'Pane di segale'},
-  {id:'cereali',name:'Pane cereali'},
-  {id:'pucce-olive',name:'Pucce con le olive'},
+  {id:'rosette',name:'Rosette',unit:'kg'},
+  {id:'ciabatte',name:'Ciabatte',unit:'kg'},
+  {id:'rosettine',name:'Rosettine',unit:'kg'},
+  {id:'rosettine-int',name:'Rosettine integrali',unit:'kg'},
+  {id:'ciabatte-int',name:'Ciabatte integrali',unit:'kg'},
+  {id:'panini-latte',name:'Panini al latte',unit:'kg'},
+  {id:'filoncini',name:'Filoncini',unit:'kg'},
+  {id:'casereccio',name:'Pane casereccio',unit:'kg'},
+  {id:'curcuma',name:'Pane curcuma',unit:'kg'},
+  {id:'segale',name:'Pane di segale',unit:'kg'},
+  {id:'cereali',name:'Pane cereali',unit:'kg'},
+  {id:'pucce-olive',name:'Pucce con le olive',unit:'kg'},
+  {id:'taralli',name:'Taralli',unit:'pz'},
+  {id:'biscotti',name:'Biscotti',unit:'pz'},
+  {id:'friselle',name:'Friselle',unit:'pz'},
+  {id:'caramelle',name:'Caramelle',unit:'pz'},
 ]
-const TERMS = [{id:'oggi',label:'Pagamento oggi'},{id:'settimana',label:'Fine settimana'},{id:'mese',label:'Fine mese'}]
+function prodUnit(id) { const p = BREAD_TYPES.find(b => b.id === id); return p ? p.unit : 'kg' }
+function prodName(id) { const p = BREAD_TYPES.find(b => b.id === id); return p ? p.name : id }
+const PROD_EMOJI = {taralli:'🥨', biscotti:'🍪', friselle:'🥯', caramelle:'🍬'}
+// Frequenza di pagamento del negozio (attributo stabile, usato per il totale)
+const TERMS = [
+  {id:'giornaliero',label:'Giornaliero'},
+  {id:'2giorni',label:'A 2 giorni'},
+  {id:'settimana',label:'Settimanale'},
+  {id:'mese',label:'Mensile'},
+]
 const KG_VALUES = (() => { const a=[]; for(let v=0.5; v<=20.0001; v+=0.5) a.push(Math.round(v*10)/10); for(let v=21; v<=100; v++) a.push(v); return a })()
-const PRICE_VALUES = (() => { const a=[]; for(let v=2.5; v<=6.0001; v+=0.1) a.push(Math.round(v*10)/10); return a })()
+const PZ_VALUES = (() => { const a=[]; for(let v=1; v<=100; v++) a.push(v); return a })()
+function qtyValues(unit) { return unit === 'pz' ? PZ_VALUES : KG_VALUES }
 const WHO_COLORS = ['who-0','who-1','who-2','who-3']
 
 // Disegni dei tipi di pane — illustrazioni vettoriali curate (interne, nitide e offline)
@@ -235,6 +278,7 @@ const BREAD_CFG = {
   'pucce-olive':   {shape:'round',    g:['#e6c079','#cf9a4f','#9c662a'], dec:'olives'},
 }
 function breadIcon(id) {
+  if (PROD_EMOJI[id]) return `<div style="width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:32px">${PROD_EMOJI[id]}</div>`
   const c = BREAD_CFG[id] || BREAD_CFG['rosette']
   const cx = 32, cy = 33
   // dimensioni per forma [rx, ry]
@@ -302,12 +346,14 @@ let currentPage = 'home'
 let currentStoreId = null
 let reportGiroId = null
 let reportPeriod = 'giro'
-let gun, db, deliveriesNode, storesNode, teamNode, pricesNode, girosNode, activeNode, snapshotNode
+let gun, db, deliveriesNode, storesNode, teamNode, pricesNode, girosNode, activeNode, snapshotNode, standardNode, paidNode
 
 let stores = {}
 let deliveries = {}
 let team = []
 let prices = {}
+let standards = {}   // quantitativi standard del mattino: {storeId:{prodId:qty}}
+let paid = {}        // stato 'pagato oggi': {storeId:{date,paid}}
 let giros = {}
 let activeGiroId = null
 let personalActiveGiroId = localStorage.getItem('personalActiveGiroId') || null
@@ -320,6 +366,7 @@ function loadCache() {
   try {
     stores = JSON.parse(localStorage.getItem('cache_stores_' + appCode) || '{}')
     prices = JSON.parse(localStorage.getItem('cache_prices_' + appCode) || '{}')
+    standards = JSON.parse(localStorage.getItem('cache_standards_' + appCode) || '{}')
     team = JSON.parse(localStorage.getItem('cache_team_' + appCode) || '[]')
     giros = JSON.parse(localStorage.getItem('cache_giros_' + appCode) || '{}')
   } catch (e) {}
@@ -329,6 +376,7 @@ function saveCache() {
   try {
     localStorage.setItem('cache_stores_' + appCode, JSON.stringify(stores))
     localStorage.setItem('cache_prices_' + appCode, JSON.stringify(prices))
+    localStorage.setItem('cache_standards_' + appCode, JSON.stringify(standards))
     localStorage.setItem('cache_team_' + appCode, JSON.stringify(team))
     localStorage.setItem('cache_giros_' + appCode, JSON.stringify(giros))
   } catch (e) {}
@@ -338,7 +386,7 @@ function saveCache() {
 // Il link di condivisione porta con sé negozi + prezzi + team, così
 // chi entra vede subito la lista giusta anche se la sync Gun è lenta.
 function buildSnapshot() {
-  return { c: appCode, s: stores, p: prices, t: team }
+  return { c: appCode, s: stores, p: prices, q: standards, t: team }
 }
 function encodeSnapshot(snap) {
   return encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(snap)))))
@@ -361,6 +409,7 @@ function tryImportFromLink() {
     // Semina subito la cache locale: lista e prezzi disponibili all'istante
     if (snap.s) localStorage.setItem('cache_stores_' + appCode, JSON.stringify(snap.s))
     if (snap.p) localStorage.setItem('cache_prices_' + appCode, JSON.stringify(snap.p))
+    if (snap.q) localStorage.setItem('cache_standards_' + appCode, JSON.stringify(snap.q))
     if (snap.t) localStorage.setItem('cache_team_' + appCode, JSON.stringify(snap.t))
     window._pendingImport = snap
     history.replaceState(null, '', location.pathname + location.search)
@@ -372,7 +421,7 @@ function tryImportFromLink() {
 // il codice riceve subito negozi + prezzi + team in un colpo solo.
 function publishSnapshot() {
   if (!snapshotNode) return
-  try { snapshotNode.put({ json: JSON.stringify({ s: stores, p: prices, t: team }) }) } catch (e) {}
+  try { snapshotNode.put({ json: JSON.stringify({ s: stores, p: prices, q: standards, t: team }) }) } catch (e) {}
 }
 function applySnapshot(d) {
   if (!d || !d.json) return
@@ -380,6 +429,7 @@ function applySnapshot(d) {
     const o = JSON.parse(d.json)
     if (o.s) Object.entries(o.s).forEach(([id, st]) => { if (!stores[id]) stores[id] = { ...st, id } })
     if (o.p) Object.entries(o.p).forEach(([sid, bp]) => { prices[sid] = { ...(prices[sid] || {}), ...bp } })
+    if (o.q) Object.entries(o.q).forEach(([sid, qp]) => { standards[sid] = { ...(standards[sid] || {}), ...qp } })
     if (o.t && o.t.length && !team.length) team = o.t
     render()
   } catch (e) {}
@@ -387,9 +437,11 @@ function applySnapshot(d) {
 function applyImportToGun(snap) {
   try {
     if (snap.s) Object.entries(snap.s).forEach(([id, st]) =>
-      storesNode.get(id).put({ name: st.name, paymentTerm: st.paymentTerm || 'settimana' }))
+      storesNode.get(id).put({ name: st.name, paymentTerm: st.paymentTerm || 'giornaliero', note: st.note || '' }))
     if (snap.p) Object.entries(snap.p).forEach(([sid, bp]) =>
       Object.entries(bp).forEach(([bid, v]) => pricesNode.get(sid).get(bid).put(v)))
+    if (snap.q) Object.entries(snap.q).forEach(([sid, qp]) =>
+      Object.entries(qp).forEach(([pid, v]) => standardNode.get(sid).get(pid).put(v)))
     if (snap.t && snap.t.length) teamNode.put({ members: snap.t.join(',') })
   } catch (e) {}
 }
@@ -407,6 +459,8 @@ function initGun() {
   activeNode = db.get('activeGiro')
   snapshotNode = db.get('snapshot')
   snapshotNode.on(applySnapshot)
+  standardNode = db.get('standards')
+  paidNode = db.get('paid')
 
   girosNode.map().on((data, id) => {
     if (data === null) { delete giros[id]; render(); return }
@@ -434,6 +488,16 @@ function initGun() {
       render()
     }
   })
+  standardNode.map().on((data, id) => {
+    if (data && id) {
+      if (!standards[id]) standards[id] = {}
+      standards[id] = {...standards[id], ...data}
+      render()
+    }
+  })
+  paidNode.map().on((data, id) => {
+    if (data && id) { paid[id] = {date: data.date, paid: !!data.paid}; render() }
+  })
 
   // Se siamo entrati da un link con snapshot, ripubblica lista+prezzi su Gun
   if (window._pendingImport) { applyImportToGun(window._pendingImport); publishSnapshot(); window._pendingImport = null }
@@ -454,6 +518,10 @@ function fmt(n) {
 }
 function fmtKg(n) {
   return (+n).toFixed(1).replace('.',',') + ' kg'
+}
+// Quantità formattata in base all'unità del prodotto
+function fmtQty(n, unit) {
+  return unit === 'pz' ? (Math.round(+n) + ' conf.') : ((+n).toFixed(1).replace('.',',') + ' kg')
 }
 function toast(msg) {
   const el = document.getElementById('toast')
@@ -494,6 +562,45 @@ function storeKg(storeId) {
 function priceFor(storeId, breadId) {
   return (prices[storeId] && prices[storeId][breadId]) ? parseFloat(prices[storeId][breadId]) : 0
 }
+function standardFor(storeId, prodId) {
+  return (standards[storeId] && standards[storeId][prodId]) ? parseFloat(standards[storeId][prodId]) : 0
+}
+// Frequenza di pagamento normalizzata (compat: vecchio 'oggi' = giornaliero)
+function storeFreq(store) {
+  const t = store && store.paymentTerm
+  if (t === 'oggi') return 'giornaliero'
+  return t || 'giornaliero'
+}
+// Prodotti rilevanti per un negozio: quelli con prezzo o quantitativo standard
+function storeProducts(storeId) {
+  const list = BREAD_TYPES.filter(b => priceFor(storeId, b.id) > 0 || standardFor(storeId, b.id) > 0)
+  return list.length ? list : BREAD_TYPES
+}
+// Stato 'pagato oggi' (si azzera ogni giorno)
+function isPaid(storeId) {
+  const p = paid[storeId]
+  return !!(p && p.date === today() && p.paid)
+}
+function togglePaid(storeId, ev) {
+  if (ev) ev.stopPropagation()
+  const v = !isPaid(storeId)
+  paid[storeId] = {date: today(), paid: v}
+  if (paidNode) paidNode.get(storeId).put({date: today(), paid: v})
+  toast(v ? '✓ Pagato' : 'Segnato non pagato')
+  render()
+}
+// Totale da riscuotere OGGI: solo negozi del giro con frequenza Giornaliero
+function totalDaRiscuotere() {
+  const giro = activeGiro()
+  if (!giro) return 0
+  return giroStoreIds(giro).map(id => stores[id]).filter(Boolean)
+    .filter(st => storeFreq(st) === 'giornaliero')
+    .reduce((s, st) => s + storeTotal(st.id), 0)
+}
+// Consegne standard del mattino già caricate oggi per questo negozio?
+function stdAlreadyLoaded(storeId) {
+  return curDeliveries().some(d => d.storeId === storeId && d.std)
+}
 const CARD_COLORS = ['#E8804A','#5B8DEF','#3FB984','#B86BD6','#EFA93F','#E0617A','#4FC3C7','#7C83E8','#F2784B','#52A8D9']
 function cardColor(i) { return CARD_COLORS[i % CARD_COLORS.length] }
 function whoIndex(name) {
@@ -501,11 +608,12 @@ function whoIndex(name) {
   return i >= 0 ? i % 4 : 0
 }
 function termLabel(term) {
+  if (term === 'oggi') return 'Giornaliero'
   const t = TERMS.find(x => x.id === term)
-  return t ? t.label : ''
+  return t ? t.label : 'Giornaliero'
 }
 function termClass(term) {
-  return term === 'oggi' ? 'term-oggi' : term === 'settimana' ? 'term-sett' : 'term-mese'
+  return (term === 'giornaliero' || term === 'oggi') ? 'term-oggi' : term === 'mese' ? 'term-mese' : 'term-sett'
 }
 
 // ─── ROUTER ───────────────────────────────────────────────────────
@@ -542,8 +650,10 @@ function renderShell() {
     settings: renderSettings,
     editStore: renderEditStore,
     editPrices: renderEditPrices,
+    editStandard: renderEditStandard,
     editTeam: renderEditTeam,
     newGiro: renderNewGiro,
+    manageGiro: renderManageGiro,
     giri: renderGiri,
   }
   return (renderers[currentPage] || renderHome)()
@@ -631,18 +741,20 @@ function renderHome() {
   const ids = giroStoreIds(giro)
   const storeList = ids.map(id => stores[id]).filter(Boolean)
   const totaleGiro = storeList.reduce((s,st) => s + storeTotal(st.id), 0)
+  const daRiscuotere = totalDaRiscuotere()
   const isPersonalGiro = giro.personal && giro.personal === myName
 
   const grid = `<div class="store-grid">
       ${storeList.map((s,i) => {
         const tot = storeTotal(s.id)
-        const kg = storeKg(s.id)
-        const done = kg > 0
+        const done = storeKg(s.id) > 0
+        const paidOn = isPaid(s.id)
         return `<div class="store-card app ${done?'done':''}" style="background:${cardColor(i)}" onclick="goTo('store','${s.id}')">
+          <div class="freq-dot ${storeFreq(s)==='giornaliero'?'freq-giornaliero':'freq-altro'}"></div>
           ${done ? `<div class="done-check">✓</div>` : ''}
           <div class="name">${s.name}</div>
           <div class="total">${fmt(tot)}</div>
-          ${done ? `<div class="kglbl">${fmtKg(kg)}</div>` : ''}
+          <div class="paid-pill ${paidOn?'on':''}" onclick="togglePaid('${s.id}',event)">${paidOn?'Pagato ✓':'Pagato?'}</div>
         </div>`
       }).join('')}
     </div>`
@@ -652,17 +764,61 @@ function renderHome() {
       <div class="topbar-row">
         <div style="flex:1">
           <div class="sub">${giro.name} · ${myName} ${isPersonalGiro ? '· 🔒 Personale' : '· 👥 Condiviso'}</div>
-          <h1>Totale giro: ${fmt(totaleGiro)}</h1>
+          <h1>Da riscuotere oggi: ${fmt(daRiscuotere)}</h1>
+          <div class="sub" style="margin-top:3px">Totale giro ${fmt(totaleGiro)} · solo negozi giornalieri nel totale da riscuotere</div>
         </div>
         <button style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:10px;padding:7px 12px;font-size:13px;cursor:pointer" onclick="goTo('giri')">Giri</button>
       </div>
     </div>
     <div class="scroll-body">
       ${storeList.length === 0 ? `<div class="empty">Questo giro non ha negozi.</div>` : grid}
-      <button class="btn-secondary" onclick="endGiro()" style="margin-top:16px">Termina giro</button>
+      <button class="btn-add" onclick="openManageGiro()" style="margin-top:14px">✏️ Aggiungi o togli negozi dal giro</button>
+      <button class="btn-secondary" onclick="endGiro()" style="margin-top:10px">Termina giro</button>
     </div>
     ${renderBottomNav()}
   </div>`
+}
+
+// ─── GESTIONE NEGOZI DEL GIRO IN CORSO (punto 7) ──────────────────
+function openManageGiro() {
+  const g = activeGiro()
+  giroSel = {}
+  if (g) giroStoreIds(g).forEach(id => giroSel[id] = true)
+  goTo('manageGiro')
+}
+function renderManageGiro() {
+  const storeList = Object.values(stores)
+  const selCount = Object.values(giroSel).filter(Boolean).length
+  const cards = storeList.map((s,i) => {
+    const sel = !!giroSel[s.id]
+    return `<div class="store-card app ${sel?'sel':''}" style="background:${cardColor(i)}" onclick="toggleGiroStore('${s.id}')">
+      ${sel ? `<div class="done-check">✓</div>` : ''}
+      <div class="name">${s.name}</div>
+    </div>`
+  }).join('')
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <div class="topbar-row">
+        <button class="back-btn" onclick="goTo('home')">←</button>
+        <div style="flex:1"><h1>Negozi del giro</h1><div class="sub">Tocca per aggiungere o togliere</div></div>
+      </div>
+    </div>
+    <div class="scroll-body">
+      ${storeList.length === 0 ? `<div class="empty">Nessun negozio. Aggiungine in Impostazioni.</div>` : `<div class="store-grid">${cards}</div>`}
+    </div>
+    <div style="padding:12px;background:#fff;border-top:0.5px solid #e0e0e0">
+      <button class="btn-confirm" onclick="saveManageGiro()">Salva (${selCount} negozi)</button>
+    </div>
+  </div>`
+}
+function saveManageGiro() {
+  const ids = Object.keys(giroSel).filter(k => giroSel[k])
+  const gid = currentActiveGiroId()
+  if (!gid) { goTo('home'); return }
+  girosNode.get(gid).put({storeIds: ids.join(',')})
+  if (giros[gid]) giros[gid].storeIds = ids.join(',')
+  toast('Negozi del giro aggiornati ✓')
+  goTo('home')
 }
 
 // ─── NUOVO GIRO (selezione negozi) ────────────────────────────────
@@ -811,33 +967,37 @@ function renderStore() {
   const colleagueRows = Object.entries(byColleague).map(([name,data]) =>
     `<div class="colleghi-row">
       <span class="cname">${name}</span>
-      <span class="ckg">${fmtKg(data.kg)}</span>
       <span class="camt">${fmt(data.amount)}</span>
     </div>`
   ).join('')
 
   const delivRows = delivs.map(d => {
-    const bread = BREAD_TYPES.find(b => b.id === d.breadId)
     const wi = whoIndex(d.who)
+    const unit = prodUnit(d.breadId)
     return `<div class="delivery-row" onclick="openDelivery('${d.id}')">
       <div class="top">
-        <span class="bread">${bread ? bread.name : d.breadId}</span>
+        <span class="bread">${prodName(d.breadId)} ${d.std?'<span style="font-size:10px;color:#aaa">· standard</span>':''}</span>
         <span class="amount">${fmt(d.amount)} <span style="color:#bbb;font-size:13px;margin-left:4px">✎</span></span>
       </div>
       <div class="meta">
         <span class="who-badge ${WHO_COLORS[wi]}">${d.who}</span>
-        <span>${fmtKg(d.kg)}</span>
+        <span>${fmtQty(d.kg, unit)}</span>
         <span>${d.time}</span>
       </div>
     </div>`
   }).join('')
 
+  const paidOn = isPaid(store.id)
+  const hasStd = BREAD_TYPES.some(b => standardFor(store.id, b.id) > 0)
+  const freq = storeFreq(store)
+
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
       <div class="topbar-row">
         <button class="back-btn" onclick="goTo('home')">←</button>
+        <div style="flex:1;font-size:18px;font-weight:700">${store.name}</div>
+        <button class="back-btn" style="font-size:17px" onclick="goTo('editStore','${store.id}')">⚙️</button>
       </div>
-      <div style="margin-top:4px;font-size:18px;font-weight:700">${store.name}</div>
     </div>
     <div class="store-hero">
       <div class="amount">${fmt(tot)}</div>
@@ -845,6 +1005,18 @@ function renderStore() {
       <div class="term">${termLabel(store.paymentTerm)}</div>
     </div>
     <div class="scroll-body">
+      <div class="pay-row">
+        <span class="pl">Pagato oggi</span>
+        <label class="switch"><input type="checkbox" ${paidOn?'checked':''} onchange="togglePaid('${store.id}')"><span class="track"><span class="knob"></span></span></label>
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <label>Quando paga (frequenza)</label>
+        <select onchange="setStoreFreq('${store.id}',this.value)">
+          ${TERMS.map(t => `<option value="${t.id}" ${freq===t.id?'selected':''}>${t.label}</option>`).join('')}
+        </select>
+      </div>
+      ${store.note ? `<div style="background:#fffaf0;border:1px solid #f0e2c8;border-radius:10px;padding:10px 12px;font-size:13px;color:#6b5a32;margin-bottom:10px">📝 ${store.note}</div>` : ''}
+      ${hasStd ? `<button class="btn-confirm" style="margin-bottom:6px" onclick="loadStandard('${store.id}')">📥 Carica quantitativi standard del mattino</button>` : ''}
       ${Object.keys(byColleague).length > 0 ? `
       <div class="colleghi-section">
         <h3>Chi ha consegnato</h3>
@@ -852,11 +1024,36 @@ function renderStore() {
       </div>` : ''}
       <div class="section-head">Consegne di oggi</div>
       ${delivRows || '<div class="empty">Nessuna consegna ancora</div>'}
+      <div style="height:70px"></div>
     </div>
     <button class="fab" onclick="openDelivery()">+</button>
     ${renderBottomNav()}
   </div>
   ${renderDeliveryModal()}`
+}
+function setStoreFreq(storeId, freq) {
+  storesNode.get(storeId).get('paymentTerm').put(freq)
+  if (stores[storeId]) stores[storeId].paymentTerm = freq
+  publishSnapshot()
+  toast('Frequenza aggiornata ✓')
+  render()
+}
+// Carica i quantitativi standard del mattino come consegne (voce std)
+function loadStandard(storeId) {
+  if (stdAlreadyLoaded(storeId) && !confirm('I quantitativi standard di oggi sono già stati caricati. Caricarli di nuovo?')) return
+  const giroId = currentActiveGiroId() || ''
+  BREAD_TYPES.forEach(b => {
+    const q = standardFor(storeId, b.id)
+    if (q > 0) {
+      const price = priceFor(storeId, b.id)
+      const id = uid()
+      const rec = {storeId, breadId: b.id, kg: q, amount: price * q, who: myName, date: today(), time: nowTs(), ts: Date.now(), giroId, std: true}
+      deliveries[id] = {...rec, id}
+      deliveriesNode.get(id).put(rec)
+    }
+  })
+  toast('Quantitativi standard caricati ✓')
+  render()
 }
 
 // ─── DELIVERY MODAL ───────────────────────────────────────────────
@@ -870,18 +1067,19 @@ function renderDeliveryModal() {
   const total = price * kg
   const canConfirm = selBread && kg > 0
 
-  const available = BREAD_TYPES.filter(b => priceFor(currentStoreId, b.id) > 0)
-  const breadItems = available.length
-    ? `<div class="bread-grid">${available.map(b => {
+  const available = storeProducts(currentStoreId)
+  const breadItems = `<div class="bread-grid">${available.map(b => {
         const p = priceFor(currentStoreId, b.id)
         return `<div class="bread-card ${selBread === b.id ? 'selected' : ''}" onclick="selectBread('${b.id}')">
           <div class="bicon">${breadIcon(b.id)}</div>
           <span class="bname">${b.name}</span>
+          <span class="bprice">${p ? fmt(p) + (b.unit==='pz'?'/conf':'/kg') : 'senza prezzo'}</span>
         </div>`
       }).join('')}</div>`
-    : `<div class="bread-empty">Per questo negozio non hai impostato nessun prezzo.<br>Vai in Impostazioni → ${store ? store.name : 'negozio'} → Prezzi e imposta i tipi di pane che porti qui.</div>`
 
-  const wDisplay = weightStr ? weightStr + ' <span class="unit">kg</span>' : '<span style="color:#ccc">0</span><span class="unit"> kg</span>'
+  const unit = selBread ? prodUnit(selBread) : 'kg'
+  const uLabel = unit === 'pz' ? 'confezioni' : 'kg'
+  const wDisplay = weightStr ? weightStr + ` <span class="unit">${uLabel}</span>` : `<span style="color:#ccc">0</span><span class="unit"> ${uLabel}</span>`
 
   const isEdit = !!editDeliveryId
   return `<div class="modal-overlay ${window._deliveryOpen ? 'open' : ''}" id="delivery-modal">
@@ -891,13 +1089,13 @@ function renderDeliveryModal() {
         <button class="modal-close" onclick="closeDelivery()">✕</button>
       </div>
       <div class="modal-body">
-        <div class="section-head">Tipo di pane ${!isEdit ? '— poi tocca i kg per confermare' : ''}</div>
+        <div class="section-head">Prodotto ${!isEdit ? '— poi tocca la quantità per confermare' : ''}</div>
         ${breadItems}
-        <div class="section-head" style="margin-top:16px">Quanti kg? ${selBread ? '(tocca per confermare)' : '(prima scegli il pane)'}</div>
+        <div class="section-head" style="margin-top:16px">${unit==='pz'?'Quante confezioni?':'Quanti kg?'} ${selBread ? '(tocca per confermare)' : '(prima scegli il prodotto)'}</div>
         <div class="weight-section">
           <div class="weight-display">${wDisplay}</div>
           <div class="kg-picker">
-            ${KG_VALUES.map(v => `<button class="kg-chip ${parseFloat(weightStr)===v ? 'selected':''}" onclick="selectKg(${v})">${fmtKg(v)}</button>`).join('')}
+            ${qtyValues(unit).map(v => `<button class="kg-chip ${parseFloat(weightStr)===v ? 'selected':''}" onclick="selectKg(${v})">${fmtQty(v, unit)}</button>`).join('')}
           </div>
         </div>
         <div class="total-preview">
@@ -956,24 +1154,29 @@ function confirmDelivery() {
   const price = priceFor(currentStoreId, selBread)
   const amount = price * kg
   if (editDeliveryId) {
-    deliveriesNode.get(editDeliveryId).put({
+    const wasStd = deliveries[editDeliveryId] && deliveries[editDeliveryId].std
+    const rec = {
       storeId: currentStoreId, breadId: selBread, kg, amount,
       who: myName, date: today(), time: nowTs(), ts: Date.now(),
-      giroId: currentActiveGiroId() || ''
-    })
+      giroId: currentActiveGiroId() || '', std: !!wasStd
+    }
+    deliveries[editDeliveryId] = {...rec, id: editDeliveryId}
+    deliveriesNode.get(editDeliveryId).put(rec)
     toast('Consegna aggiornata ✓')
   } else {
     const id = uid()
-    deliveriesNode.get(id).put({
+    const rec = {
       storeId: currentStoreId, breadId: selBread, kg, amount,
       who: myName, date: today(), time: nowTs(), ts: Date.now(),
-      giroId: currentActiveGiroId() || ''
-    })
+      giroId: currentActiveGiroId() || '', std: false
+    }
+    deliveries[id] = {...rec, id}
+    deliveriesNode.get(id).put(rec)
     toast('Consegna registrata ✓')
   }
   window._deliveryOpen = false
   editDeliveryId = null
-  goTo('home')
+  goTo('store')
 }
 function deleteDelivery() {
   if (!editDeliveryId) return
@@ -1054,7 +1257,7 @@ function renderReport() {
       const b = BREAD_TYPES.find(x => x.id === bid)
       return `<div class="report-row">
         <span class="rleft">${b ? b.name : bid}</span>
-        <span class="rright">${fmtKg(bd.kg)} · ${fmt(bd.amount)}</span>
+        <span class="rright">${fmtQty(bd.kg, prodUnit(bid))} · ${fmt(bd.amount)}</span>
       </div>`
     }).join('')
     return `<div class="report-card">
@@ -1080,13 +1283,13 @@ function renderReport() {
     reportLines.push(`📦 ${store.name}`)
     Object.entries(data.byBread).forEach(([bid,bd]) => {
       const b = BREAD_TYPES.find(x => x.id === bid)
-      reportLines.push(`  ${(b ? b.name : bid).padEnd(22)} ${bd.kg.toFixed(1).replace('.',',')} kg   ${bd.amount.toFixed(2).replace('.',',')} €`)
+      reportLines.push(`  ${(b ? b.name : bid).padEnd(20)} ${fmtQty(bd.kg, prodUnit(bid)).padStart(9)}   ${bd.amount.toFixed(2).replace('.',',')} €`)
     })
-    reportLines.push(`  ${'TOTALE'.padEnd(22)} ${data.kg.toFixed(1).replace('.',',')} kg   ${data.tot.toFixed(2).replace('.',',')} €`)
+    reportLines.push(`  ${'TOTALE'.padEnd(20)} ${''.padStart(9)}   ${data.tot.toFixed(2).replace('.',',')} €`)
     reportLines.push('')
   })
   reportLines.push('━━━━━━━━━━━━━━━━━━━━━━')
-  reportLines.push(`TOTALE GENERALE   ${totKg.toFixed(1).replace('.',',')} kg   ${totGiorno.toFixed(2).replace('.',',')} €`)
+  reportLines.push(`TOTALE GENERALE   ${totGiorno.toFixed(2).replace('.',',')} €`)
   const reportText = reportLines.join('\n')
 
   const giroOptions = giroList.map(g => `<option value="${g.id}" ${g.id===selGiroId?'selected':''}>${g.name}</option>`).join('')
@@ -1095,7 +1298,7 @@ function renderReport() {
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
       <h1>Resoconto</h1>
-      <div class="sub">${reportTitle} · ${fmtKg(totKg)} · ${fmt(totGiorno)}</div>
+      <div class="sub">${reportTitle} · ${fmt(totGiorno)}</div>
     </div>
     <div style="padding:10px 12px 0;background:#fff;border-bottom:0.5px solid #e8e8e8;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-shrink:0">
       ${periods.map(p => `<button style="${tabStyle(p)}" onclick="reportPeriod='${p}';reportGiroId=null;render()">${periodLabel(p)}</button>`).join('')}
@@ -1229,22 +1432,29 @@ function addStore() {
 // ─── EDIT STORE ───────────────────────────────────────────────────
 function renderEditStore() {
   const isNew = currentStoreId === 'new'
-  const store = isNew ? {name:'',paymentTerm:'settimana'} : (stores[currentStoreId] || {name:'',paymentTerm:'settimana'})
+  const store = isNew ? {name:'',paymentTerm:'giornaliero',note:''} : (stores[currentStoreId] || {name:'',paymentTerm:'giornaliero',note:''})
+  const freq = storeFreq(store)
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
-      <button class="back-btn" onclick="goTo('settings')">←</button>
-      <h1 style="margin-top:6px">${isNew ? 'Nuovo negozio' : 'Modifica negozio'}</h1>
+      <div class="topbar-row">
+        <button class="back-btn" onclick="goTo('${isNew ? 'settings' : 'store'}','${isNew ? '' : currentStoreId}')">←</button>
+        <h1 style="flex:1">${isNew ? 'Nuovo negozio' : 'Modifica negozio'}</h1>
+      </div>
     </div>
     <div class="scroll-body">
       <div class="field"><label>Nome negozio</label><input id="s-name" value="${store.name||''}" placeholder="es. Coop Ostuni"></div>
-      <div class="field"><label>Termine di pagamento</label>
+      <div class="field"><label>Quando paga (frequenza)</label>
         <select id="s-term">
-          ${TERMS.map(t => `<option value="${t.id}" ${store.paymentTerm===t.id?'selected':''}>${t.label}</option>`).join('')}
+          ${TERMS.map(t => `<option value="${t.id}" ${freq===t.id?'selected':''}>${t.label}</option>`).join('')}
         </select>
+      </div>
+      <div class="field"><label>Note (libere)</label>
+        <textarea id="s-note" class="note-area" placeholder="es. citofono retro, chiuso lunedì, chiedere di Mario...">${store.note||''}</textarea>
       </div>
       <button class="btn-confirm" onclick="saveStore()">${isNew ? 'Crea negozio' : 'Salva modifiche'}</button>
       ${!isNew ? `
-        <button class="btn-confirm" style="background:#fff;color:#D85A30;border:1.5px solid #D85A30;margin-top:10px" onclick="goTo('editPrices','${store.id}')">🍞 Tipi di pane e prezzi</button>
+        <button class="btn-confirm" style="background:#fff;color:#D85A30;border:1.5px solid #D85A30;margin-top:10px" onclick="saveStore();goTo('editPrices','${store.id}')">🍞 Tipi di pane e prezzi</button>
+        <button class="btn-confirm" style="background:#fff;color:#D85A30;border:1.5px solid #D85A30;margin-top:10px" onclick="saveStore();goTo('editStandard','${store.id}')">📥 Quantitativi standard del mattino</button>
         <button class="btn-delete" onclick="deleteStore('${store.id}')">Elimina negozio</button>
       ` : ''}
     </div>
@@ -1253,14 +1463,16 @@ function renderEditStore() {
 function saveStore() {
   const name = document.getElementById('s-name').value.trim()
   const term = document.getElementById('s-term').value
-  if (!name) { toast('Inserisci il nome del negozio'); return }
+  const note = document.getElementById('s-note').value.trim()
+  if (!name) { toast('Inserisci il nome del negozio'); return false }
   const id = currentStoreId === 'new' ? uid() : currentStoreId
-  storesNode.get(id).put({name, paymentTerm: term})
-  stores[id] = {name, paymentTerm: term, id}
+  storesNode.get(id).put({name, paymentTerm: term, note})
+  stores[id] = {name, paymentTerm: term, note, id}
   currentStoreId = id
   publishSnapshot()
   toast('Salvato ✓')
-  goTo('settings')
+  if (currentPage === 'editStore') goTo('settings')
+  return true
 }
 function deleteStore(id) {
   if (!confirm('Eliminare questo negozio?')) return
@@ -1278,22 +1490,23 @@ function renderEditPrices() {
   const cards = BREAD_TYPES.map(b => {
     const p = priceFor(currentStoreId, b.id)
     const served = p > 0
+    const per = b.unit === 'pz' ? '/conf' : '/kg'
     return `<div class="bread-card ${served ? 'selected' : ''}" onclick="openPriceModal('${b.id}')" style="position:relative">
       ${served ? `<div class="done-check" style="position:absolute;top:5px;right:5px;width:18px;height:18px;font-size:10px">✓</div>` : ''}
       <div class="bicon">${breadIcon(b.id)}</div>
       <span class="bname">${b.name}</span>
-      <span class="bprice">${served ? fmt(p) + '/kg' : 'tocca per aggiungere'}</span>
+      <span class="bprice">${served ? fmt(p) + per : 'tocca per aggiungere'}</span>
     </div>`
   }).join('')
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
       <div class="topbar-row">
         <button class="back-btn" onclick="goTo('editStore','${currentStoreId}')">←</button>
-        <div style="flex:1"><h1>Pane e prezzi</h1><div class="sub">${store.name} · ${servedCount} tipi di pane</div></div>
+        <div style="flex:1"><h1>Prodotti e prezzi</h1><div class="sub">${store.name} · ${servedCount} con prezzo</div></div>
       </div>
     </div>
     <div class="scroll-body">
-      <p style="font-size:13px;color:#888;margin-bottom:12px">Tocca i tipi di pane che porti in questo negozio e imposta il prezzo al kg.</p>
+      <p style="font-size:13px;color:#888;margin-bottom:12px">Tocca i prodotti che porti in questo negozio e imposta il prezzo. Il prezzo è facoltativo: puoi anche lasciarlo vuoto.</p>
       <div class="bread-grid">${cards}</div>
     </div>
   </div>
@@ -1308,39 +1521,55 @@ function savePrice(storeId, breadId, val) {
   publishSnapshot()
 }
 
-// ─── PREZZO: SELETTORE STILE CHILI (2,50€ → 6,00€) ────────────────
+// ─── PREZZO: STEPPER A 5 CENTESIMI + INSERIMENTO MANUALE ──────────
 let priceBread = null
+let priceStr = ''
 function renderPriceModal() {
   const b = priceBread ? BREAD_TYPES.find(x => x.id === priceBread) : null
-  const cur = b ? priceFor(currentStoreId, b.id) : 0
+  const per = b && b.unit === 'pz' ? 'a confezione' : 'al kg'
   return `<div class="modal-overlay ${window._priceOpen ? 'open' : ''}" id="price-modal">
     <div class="modal">
       <div class="modal-head">
-        <h2>${b ? b.name : ''} — prezzo al kg</h2>
+        <h2>${b ? b.name : ''} — prezzo ${per}</h2>
         <button class="modal-close" onclick="closePriceModal()">✕</button>
       </div>
       <div class="modal-body">
-        <div class="section-head">Quanto costa 1 kg? (tocca per confermare)</div>
-        <div class="weight-section">
-          <div class="weight-display">${cur ? fmt(cur) + ' <span class="unit">/kg</span>' : '<span style="color:#ccc">—</span>'}</div>
-          <div class="kg-picker">
-            ${PRICE_VALUES.map(v => `<button class="kg-chip ${cur === v ? 'selected' : ''}" onclick="setPrice(${v})">${fmt(v)}</button>`).join('')}
-          </div>
+        <div class="section-head">Usa − / + (passi da 5 centesimi) oppure scrivi il prezzo</div>
+        <div class="stepper">
+          <button onclick="priceStep(-0.05)">−</button>
+          <div class="val"><input id="price-input" type="text" inputmode="decimal" value="${priceStr}" placeholder="0,00" oninput="priceStr=this.value"></div>
+          <button onclick="priceStep(0.05)">+</button>
         </div>
-        ${cur > 0 ? `<button class="btn-delete" onclick="removePrice()">Non porto questo pane qui</button>` : ''}
+        <div style="text-align:center;color:#888;font-size:13px;margin-bottom:14px">€ ${per}</div>
+        <button class="btn-confirm" onclick="confirmPrice()">Salva prezzo</button>
+        <button class="btn-delete" onclick="removePrice()">Senza prezzo / non lo porto qui</button>
       </div>
     </div>
   </div>`
 }
 function openPriceModal(bid) {
   priceBread = bid
+  const cur = priceFor(currentStoreId, bid)
+  priceStr = cur > 0 ? cur.toFixed(2).replace('.', ',') : ''
   window._priceOpen = true
   render()
-  setTimeout(() => { const s = document.querySelector('#price-modal .kg-chip.selected'); if (s) s.scrollIntoView({block:'nearest'}) }, 50)
 }
 function closePriceModal() { window._priceOpen = false; priceBread = null; render() }
-function setPrice(v) {
-  savePrice(currentStoreId, priceBread, v)
+function priceStep(delta) {
+  const inp = document.getElementById('price-input')
+  if (inp) priceStr = inp.value
+  let v = parseFloat((priceStr || '').replace(',', '.'))
+  if (isNaN(v)) { priceStr = '2,50'; render(); return }
+  v = Math.max(0, Math.round((v + delta) * 100) / 100)
+  priceStr = v.toFixed(2).replace('.', ',')
+  render()
+}
+function confirmPrice() {
+  const inp = document.getElementById('price-input')
+  if (inp) priceStr = inp.value
+  const v = parseFloat((priceStr || '').replace(',', '.'))
+  if (priceStr === '' || isNaN(v) || v <= 0) { removePrice(); return }
+  savePrice(currentStoreId, priceBread, Math.round(v * 100) / 100)
   window._priceOpen = false; priceBread = null
   toast('Prezzo impostato ✓')
   render()
@@ -1350,7 +1579,85 @@ function removePrice() {
   pricesNode.get(currentStoreId).get(priceBread).put(0)
   publishSnapshot()
   window._priceOpen = false; priceBread = null
-  toast('Rimosso')
+  toast('Senza prezzo')
+  render()
+}
+
+// ─── QUANTITATIVI STANDARD DEL MATTINO (per negozio) ──────────────
+function renderEditStandard() {
+  const store = stores[currentStoreId]
+  if (!store) { currentPage = 'settings'; return renderSettings() }
+  const setCount = BREAD_TYPES.filter(b => standardFor(currentStoreId, b.id) > 0).length
+  const cards = BREAD_TYPES.map(b => {
+    const q = standardFor(currentStoreId, b.id)
+    const has = q > 0
+    return `<div class="bread-card ${has ? 'selected' : ''}" onclick="openStdModal('${b.id}')" style="position:relative">
+      ${has ? `<div class="done-check" style="position:absolute;top:5px;right:5px;width:18px;height:18px;font-size:10px">✓</div>` : ''}
+      <div class="bicon">${breadIcon(b.id)}</div>
+      <span class="bname">${b.name}</span>
+      <span class="bprice">${has ? fmtQty(q, b.unit) : 'tocca per impostare'}</span>
+    </div>`
+  }).join('')
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <div class="topbar-row">
+        <button class="back-btn" onclick="goTo('editStore','${currentStoreId}')">←</button>
+        <div style="flex:1"><h1>Quantitativi standard</h1><div class="sub">${store.name} · ${setCount} prodotti</div></div>
+      </div>
+    </div>
+    <div class="scroll-body">
+      <p style="font-size:13px;color:#888;margin-bottom:12px">Imposta i quantitativi fissi del primo scarico del mattino. Durante il giro, nel negozio, basta toccare "Carica quantitativi standard" per inserirli tutti in un colpo.</p>
+      <div class="bread-grid">${cards}</div>
+    </div>
+  </div>
+  ${renderStdModal()}`
+}
+let stdProd = null
+function renderStdModal() {
+  const b = stdProd ? BREAD_TYPES.find(x => x.id === stdProd) : null
+  const unit = b ? b.unit : 'kg'
+  const cur = b ? standardFor(currentStoreId, b.id) : 0
+  return `<div class="modal-overlay ${window._stdOpen ? 'open' : ''}" id="std-modal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>${b ? b.name : ''} — quantità standard</h2>
+        <button class="modal-close" onclick="closeStdModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="section-head">${unit==='pz'?'Quante confezioni ogni mattina?':'Quanti kg ogni mattina?'} (tocca per confermare)</div>
+        <div class="weight-section">
+          <div class="weight-display">${cur ? fmtQty(cur, unit) : '<span style="color:#ccc">—</span>'}</div>
+          <div class="kg-picker">
+            ${qtyValues(unit).map(v => `<button class="kg-chip ${cur === v ? 'selected' : ''}" onclick="setStandard(${v})">${fmtQty(v, unit)}</button>`).join('')}
+          </div>
+        </div>
+        ${cur > 0 ? `<button class="btn-delete" onclick="removeStandard()">Togli dallo standard</button>` : ''}
+      </div>
+    </div>
+  </div>`
+}
+function openStdModal(pid) {
+  stdProd = pid
+  window._stdOpen = true
+  render()
+  setTimeout(() => { const s = document.querySelector('#std-modal .kg-chip.selected'); if (s) s.scrollIntoView({block:'nearest'}) }, 50)
+}
+function closeStdModal() { window._stdOpen = false; stdProd = null; render() }
+function setStandard(v) {
+  if (!standards[currentStoreId]) standards[currentStoreId] = {}
+  standards[currentStoreId][stdProd] = v
+  standardNode.get(currentStoreId).get(stdProd).put(v)
+  publishSnapshot()
+  window._stdOpen = false; stdProd = null
+  toast('Quantità standard impostata ✓')
+  render()
+}
+function removeStandard() {
+  if (standards[currentStoreId]) delete standards[currentStoreId][stdProd]
+  standardNode.get(currentStoreId).get(stdProd).put(0)
+  publishSnapshot()
+  window._stdOpen = false; stdProd = null
+  toast('Tolto dallo standard')
   render()
 }
 
@@ -1388,7 +1695,7 @@ function renderBottomNav() {
     {page:'report',label:'Resoconto',icon:`<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>`},
     {page:'settings',label:'Impostazioni',icon:`<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>`},
   ]
-  const activePage = ['editStore','editPrices','editTeam'].includes(currentPage) ? 'settings' : ['store','newGiro','giri'].includes(currentPage) ? 'home' : currentPage
+  const activePage = ['editStore','editPrices','editStandard','editTeam'].includes(currentPage) ? 'settings' : ['store','newGiro','manageGiro','giri'].includes(currentPage) ? 'home' : currentPage
   return `<nav class="bottomnav">
     ${navItems.map(n => `
       <button class="nav-btn ${activePage === n.page ? 'active' : ''}" onclick="goTo('${n.page}')">
