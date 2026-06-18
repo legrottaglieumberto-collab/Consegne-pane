@@ -867,7 +867,9 @@ function confirmDelivery() {
     })
     toast('Consegna registrata ✓')
   }
-  closeDelivery()
+  window._deliveryOpen = false
+  editDeliveryId = null
+  goTo('home')
 }
 function deleteDelivery() {
   if (!editDeliveryId) return
