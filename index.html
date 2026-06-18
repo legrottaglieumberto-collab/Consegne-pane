@@ -870,6 +870,7 @@ function startGiro() {
     ts: Date.now(),
     personal: newGiroPersonal ? myName : ''
   }
+  giros[id] = {...giro, id}   // aggiorna subito in locale: la home trova il giro senza aspettare Gun
   girosNode.get(id).put(giro)
   if (newGiroPersonal) {
     personalActiveGiroId = id
