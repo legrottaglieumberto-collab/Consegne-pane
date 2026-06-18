@@ -292,6 +292,7 @@ let myName = localStorage.getItem('myName') || ''
 let currentPage = 'home'
 let currentStoreId = null
 let reportGiroId = null
+let reportPeriod = 'giro'
 let gun, db, deliveriesNode, storesNode, teamNode, pricesNode, girosNode, activeNode
 
 let stores = {}
@@ -300,7 +301,10 @@ let team = []
 let prices = {}
 let giros = {}
 let activeGiroId = null
+let personalActiveGiroId = localStorage.getItem('personalActiveGiroId') || null
 let giroSel = {}
+let newGiroPersonal = false
+let editDeliveryId = null
 
 // ─── GUN INIT ─────────────────────────────────────────────────────
 function initGun() {
@@ -366,16 +370,21 @@ function toast(msg) {
 function todayDeliveries() {
   return Object.values(deliveries).filter(d => d.date === today())
 }
+function currentActiveGiroId() {
+  return personalActiveGiroId || activeGiroId || null
+}
 function activeGiro() {
-  return activeGiroId ? giros[activeGiroId] : null
+  const id = currentActiveGiroId()
+  return id ? giros[id] : null
 }
 function giroStoreIds(g) {
   return g && g.storeIds ? g.storeIds.split(',').filter(Boolean) : []
 }
 // Consegne del contesto attuale: del giro attivo se c'è, altrimenti di oggi
 function curDeliveries() {
-  return activeGiroId
-    ? Object.values(deliveries).filter(d => d.giroId === activeGiroId)
+  const id = currentActiveGiroId()
+  return id
+    ? Object.values(deliveries).filter(d => d.giroId === id)
     : todayDeliveries()
 }
 function storeTotal(storeId) {
@@ -516,6 +525,7 @@ function renderHome() {
   const ids = giroStoreIds(giro)
   const storeList = ids.map(id => stores[id]).filter(Boolean)
   const totaleGiro = storeList.reduce((s,st) => s + storeTotal(st.id), 0)
+  const isPersonalGiro = giro.personal && giro.personal === myName
 
   const grid = `<div class="store-grid">
       ${storeList.map(s => {
@@ -536,7 +546,7 @@ function renderHome() {
     <div class="topbar">
       <div class="topbar-row">
         <div style="flex:1">
-          <div class="sub">${giro.name} · ${myName}</div>
+          <div class="sub">${giro.name} · ${myName} ${isPersonalGiro ? '· 🔒 Personale' : '· 👥 Condiviso'}</div>
           <h1>Totale giro: ${fmt(totaleGiro)}</h1>
         </div>
         <button style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:10px;padding:7px 12px;font-size:13px;cursor:pointer" onclick="goTo('giri')">Giri</button>
@@ -569,6 +579,11 @@ function renderNewGiro() {
       <div class="sub">Tocca i negozi che vuoi visitare</div>
     </div>
     <div class="scroll-body">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button onclick="newGiroPersonal=false;render()" style="flex:1;padding:12px;border-radius:12px;border:2px solid ${!newGiroPersonal?'#D85A30':'#e0e0e0'};background:${!newGiroPersonal?'#fff8f6':'#fff'};color:${!newGiroPersonal?'#D85A30':'#888'};font-size:14px;font-weight:600;cursor:pointer">👥 Condiviso</button>
+        <button onclick="newGiroPersonal=true;render()" style="flex:1;padding:12px;border-radius:12px;border:2px solid ${newGiroPersonal?'#D85A30':'#e0e0e0'};background:${newGiroPersonal?'#fff8f6':'#fff'};color:${newGiroPersonal?'#D85A30':'#888'};font-size:14px;font-weight:600;cursor:pointer">🔒 Personale</button>
+      </div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:12px">${newGiroPersonal ? 'Solo tu vedi questo giro sul tuo dispositivo.' : 'Tutti i colleghi vedono questo giro in tempo reale.'}</div>
       ${storeList.length === 0 ? `<div class="empty">Nessun negozio. Vai in Impostazioni per aggiungerne.</div>` : `<div class="store-grid">${cards}</div>`}
     </div>
     <div style="padding:12px;background:#fff;border-top:0.5px solid #e0e0e0">
@@ -589,32 +604,48 @@ function startGiro() {
     storeIds: ids.join(','),
     date: today(),
     who: myName,
-    ts: Date.now()
+    ts: Date.now(),
+    personal: newGiroPersonal ? myName : ''
   }
   girosNode.get(id).put(giro)
-  activeNode.put({giroId: id})
-  activeGiroId = id
+  if (newGiroPersonal) {
+    personalActiveGiroId = id
+    localStorage.setItem('personalActiveGiroId', id)
+  } else {
+    activeNode.put({giroId: id})
+    activeGiroId = id
+  }
   giroSel = {}
+  newGiroPersonal = false
   toast('Giro avviato ✓')
   goTo('home')
 }
 function endGiro() {
   if (!confirm('Terminare il giro in corso? Le consegne restano salvate nel resoconto.')) return
-  activeNode.put({giroId: ''})
-  activeGiroId = null
+  if (personalActiveGiroId) {
+    personalActiveGiroId = null
+    localStorage.removeItem('personalActiveGiroId')
+  } else {
+    activeNode.put({giroId: ''})
+    activeGiroId = null
+  }
   goTo('home')
 }
 
 // ─── GIRI (gestione / cancellazione) ──────────────────────────────
 function renderGiri() {
-  const list = Object.values(giros).sort((a,b) => (b.ts||0) - (a.ts||0))
+  const curActiveId = currentActiveGiroId()
+  const list = Object.values(giros)
+    .filter(g => !g.personal || g.personal === myName)
+    .sort((a,b) => (b.ts||0) - (a.ts||0))
   const giroTotal = (g) => Object.values(deliveries).filter(d => d.giroId === g.id).reduce((s,d)=>s+(parseFloat(d.amount)||0),0)
   const rows = list.map(g => {
-    const isActive = g.id === activeGiroId
+    const isActive = g.id === curActiveId
+    const isPersonal = g.personal && g.personal === myName
     const nStores = giroStoreIds(g).length
     return `<div class="settings-item" style="${isActive?'border:2px solid #D85A30':''}">
       <div class="si-left" onclick="activateGiro('${g.id}')" style="flex:1">
-        <span class="si-name">${g.name} ${isActive?'<span style="color:#D85A30;font-size:11px">• in corso</span>':''}</span>
+        <span class="si-name">${isPersonal?'🔒 ':'👥 '}${g.name} ${isActive?'<span style="color:#D85A30;font-size:11px">• in corso</span>':''}</span>
         <span class="si-sub">${nStores} negozi · ${fmt(giroTotal(g))} · ${g.who||''}</span>
       </div>
       <button class="mini-del" onclick="deleteGiro('${g.id}')">🗑</button>
@@ -635,8 +666,16 @@ function renderGiri() {
   </div>`
 }
 function activateGiro(id) {
-  activeNode.put({giroId: id})
-  activeGiroId = id
+  const g = giros[id]
+  const isPersonal = g && g.personal && g.personal === myName
+  if (isPersonal) {
+    personalActiveGiroId = id
+    localStorage.setItem('personalActiveGiroId', id)
+  } else {
+    activeNode.put({giroId: id})
+    activeGiroId = id
+    if (personalActiveGiroId) { personalActiveGiroId = null; localStorage.removeItem('personalActiveGiroId') }
+  }
   goTo('home')
 }
 function deleteGiro(id) {
@@ -645,6 +684,7 @@ function deleteGiro(id) {
   girosNode.get(id).put(null)
   delete giros[id]
   if (activeGiroId === id) { activeNode.put({giroId: ''}); activeGiroId = null }
+  if (personalActiveGiroId === id) { personalActiveGiroId = null; localStorage.removeItem('personalActiveGiroId') }
   toast('Giro cancellato')
   render()
 }
@@ -654,7 +694,7 @@ function renderStore() {
   const store = stores[currentStoreId]
   if (!store) { currentPage = 'home'; return renderHome() }
   const tot = storeTotal(store.id)
-  const delivs = todayDeliveries().filter(d => d.storeId === store.id).sort((a,b) => b.ts - a.ts)
+  const delivs = curDeliveries().filter(d => d.storeId === store.id).sort((a,b) => b.ts - a.ts)
 
   // Group by colleague
   const byColleague = {}
@@ -675,10 +715,10 @@ function renderStore() {
   const delivRows = delivs.map(d => {
     const bread = BREAD_TYPES.find(b => b.id === d.breadId)
     const wi = whoIndex(d.who)
-    return `<div class="delivery-row">
+    return `<div class="delivery-row" onclick="openDelivery('${d.id}')">
       <div class="top">
         <span class="bread">${bread ? bread.name : d.breadId}</span>
-        <span class="amount">${fmt(d.amount)}</span>
+        <span class="amount">${fmt(d.amount)} <span style="color:#bbb;font-size:13px;margin-left:4px">✎</span></span>
       </div>
       <div class="meta">
         <span class="who-badge ${WHO_COLORS[wi]}">${d.who}</span>
@@ -740,16 +780,17 @@ function renderDeliveryModal() {
 
   const wDisplay = weightStr ? weightStr + ' <span class="unit">kg</span>' : '<span style="color:#ccc">0</span><span class="unit"> kg</span>'
 
+  const isEdit = !!editDeliveryId
   return `<div class="modal-overlay ${window._deliveryOpen ? 'open' : ''}" id="delivery-modal">
     <div class="modal">
       <div class="modal-head">
-        <h2>Registra consegna</h2>
+        <h2>${isEdit ? '✎ Modifica consegna' : 'Registra consegna'}</h2>
         <button class="modal-close" onclick="closeDelivery()">✕</button>
       </div>
       <div class="modal-body">
-        <div class="section-head">Tipo di pane</div>
+        <div class="section-head">Tipo di pane ${!isEdit ? '— poi tocca i kg per confermare' : ''}</div>
         ${breadItems}
-        <div class="section-head" style="margin-top:16px">Quanti kg? (scorri e tocca)</div>
+        <div class="section-head" style="margin-top:16px">Quanti kg? ${selBread ? '(tocca per confermare)' : '(prima scegli il pane)'}</div>
         <div class="weight-section">
           <div class="weight-display">${wDisplay}</div>
           <div class="kg-picker">
@@ -761,31 +802,44 @@ function renderDeliveryModal() {
           <span class="amount">${fmt(total)}</span>
         </div>
         <div class="total-preview" style="background:#fff;color:#1a1a1a;border:1.5px solid #D85A30">
-          <span class="label" style="opacity:1;color:#888">Totale ${store ? store.name : 'negozio'} oggi</span>
-          <span class="amount" style="color:#D85A30">${fmt(storeTotal(currentStoreId) + total)}</span>
+          <span class="label" style="opacity:1;color:#888">Totale ${store ? store.name : 'negozio'}</span>
+          <span class="amount" style="color:#D85A30">${fmt(storeTotal(currentStoreId) + (isEdit ? 0 : total))}</span>
         </div>
-        <button class="btn-confirm" ${canConfirm ? '' : 'disabled'} onclick="confirmDelivery()">Conferma consegna</button>
+        ${isEdit ? `
+        <button class="btn-confirm" ${canConfirm ? '' : 'disabled'} onclick="confirmDelivery()" style="margin-bottom:10px">Salva modifiche</button>
+        <button class="btn-delete" onclick="deleteDelivery()">🗑 Elimina questa consegna</button>
+        ` : ''}
       </div>
     </div>
   </div>`
 }
 
-function openDelivery() {
-  selBread = null
-  weightStr = ''
+function openDelivery(id) {
+  editDeliveryId = id || null
+  if (id && deliveries[id]) {
+    const d = deliveries[id]
+    selBread = d.breadId
+    weightStr = String(d.kg)
+  } else {
+    selBread = null
+    weightStr = ''
+  }
   window._deliveryOpen = true
   render()
 }
 function closeDelivery() {
   window._deliveryOpen = false
+  editDeliveryId = null
   render()
 }
 function selectBread(id) {
   selBread = id
+  if (weightStr) { confirmDelivery(); return }
   render()
 }
 function selectKg(v) {
   weightStr = String(v)
+  if (selBread) { confirmDelivery(); return }
   render()
   setTimeout(() => {
     const sel = document.querySelector('.kg-chip.selected')
@@ -793,100 +847,161 @@ function selectKg(v) {
   }, 50)
 }
 function confirmDelivery() {
-  const store = stores[currentStoreId]
   if (!selBread || !weightStr) return
   const kg = parseFloat(weightStr)
   if (!kg) return
   const price = priceFor(currentStoreId, selBread)
   const amount = price * kg
-  const id = uid()
-  const delivery = {
-    storeId: currentStoreId,
-    breadId: selBread,
-    kg: kg,
-    amount: amount,
-    who: myName,
-    date: today(),
-    time: nowTs(),
-    ts: Date.now(),
-    giroId: activeGiroId || ''
+  if (editDeliveryId) {
+    deliveriesNode.get(editDeliveryId).put({
+      storeId: currentStoreId, breadId: selBread, kg, amount,
+      who: myName, date: today(), time: nowTs(), ts: Date.now(),
+      giroId: currentActiveGiroId() || ''
+    })
+    toast('Consegna aggiornata ✓')
+  } else {
+    const id = uid()
+    deliveriesNode.get(id).put({
+      storeId: currentStoreId, breadId: selBread, kg, amount,
+      who: myName, date: today(), time: nowTs(), ts: Date.now(),
+      giroId: currentActiveGiroId() || ''
+    })
+    toast('Consegna registrata ✓')
   }
-  deliveriesNode.get(id).put(delivery)
   closeDelivery()
-  toast('Consegna registrata ✓')
+}
+function deleteDelivery() {
+  if (!editDeliveryId) return
+  if (!confirm('Eliminare questa consegna?')) return
+  deliveriesNode.get(editDeliveryId).put(null)
+  delete deliveries[editDeliveryId]
+  toast('Consegna eliminata')
+  closeDelivery()
 }
 
 // ─── REPORT ───────────────────────────────────────────────────────
+function dateInPeriod(dateStr, period) {
+  if (!dateStr) return false
+  const parts = dateStr.split('/')
+  if (parts.length !== 3) return false
+  const [d, m, y] = parts.map(Number)
+  const dt = new Date(y, m-1, d)
+  const now = new Date()
+  if (period === 'oggi') return dateStr === today()
+  if (period === 'mese') return dt.getMonth() === now.getMonth() && dt.getFullYear() === now.getFullYear()
+  if (period === 'anno') return dt.getFullYear() === now.getFullYear()
+  if (period === 'settimana') {
+    const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay()+6)%7)); mon.setHours(0,0,0,0)
+    const sun = new Date(mon); sun.setDate(mon.getDate()+6); sun.setHours(23,59,59,999)
+    return dt >= mon && dt <= sun
+  }
+  return true
+}
+function periodLabel(p) {
+  return {giro:'Per giro',oggi:'Oggi',settimana:'Settimana',mese:'Mese',anno:'Anno'}[p] || p
+}
 function renderReport() {
   const storeList = Object.values(stores)
-  // Giri ordinati dal più recente; più una voce "Giorno di oggi" per consegne senza giro
-  const giroList = Object.values(giros).sort((a,b) => (b.ts||0) - (a.ts||0))
-  const selGiroId = reportGiroId !== null ? reportGiroId : (activeGiroId || (giroList[0] ? giroList[0].id : ''))
-  const selGiro = giros[selGiroId]
-  const dateDelivs = selGiroId
-    ? Object.values(deliveries).filter(d => d.giroId === selGiroId)
-    : Object.values(deliveries).filter(d => d.date === today() && !d.giroId)
-  const totForStore = (id) => dateDelivs.filter(d => d.storeId === id).reduce((s,d)=>s+(parseFloat(d.amount)||0),0)
-  const totGiorno = storeList.reduce((s,st) => s + totForStore(st.id), 0)
-  const reportTitle = selGiro ? selGiro.name : 'Consegne di oggi'
+  const giroList = Object.values(giros)
+    .filter(g => !g.personal || g.personal === myName)
+    .sort((a,b) => (b.ts||0) - (a.ts||0))
+  const periods = ['oggi','settimana','mese','anno','giro']
 
-  const cards = storeList.map(store => {
-    const delivs = dateDelivs.filter(d => d.storeId === store.id)
-    if (!delivs.length) return ''
+  let filteredDelivs = []
+  let reportTitle = ''
+  let selGiroId = ''
+
+  if (reportPeriod === 'giro') {
+    selGiroId = reportGiroId !== null ? reportGiroId : (currentActiveGiroId() || (giroList[0] ? giroList[0].id : ''))
+    const selGiro = giros[selGiroId]
+    filteredDelivs = selGiroId
+      ? Object.values(deliveries).filter(d => d.giroId === selGiroId)
+      : Object.values(deliveries).filter(d => d.date === today() && !d.giroId)
+    reportTitle = selGiro ? selGiro.name : 'Nessun giro'
+  } else {
+    filteredDelivs = Object.values(deliveries).filter(d => dateInPeriod(d.date, reportPeriod))
+    reportTitle = periodLabel(reportPeriod)
+  }
+
+  const totForStore = (id) => filteredDelivs.filter(d => d.storeId === id).reduce((s,d)=>s+(parseFloat(d.amount)||0),0)
+  const kgForStore = (id) => filteredDelivs.filter(d => d.storeId === id).reduce((s,d)=>s+(parseFloat(d.kg)||0),0)
+  const totGiorno = storeList.reduce((s,st) => s + totForStore(st.id), 0)
+  const totKg = storeList.reduce((s,st) => s + kgForStore(st.id), 0)
+
+  const buildStoreData = (store) => {
+    const delivs = filteredDelivs.filter(d => d.storeId === store.id)
+    if (!delivs.length) return null
     const tot = totForStore(store.id)
+    const kg = kgForStore(store.id)
     const byBread = {}
     delivs.forEach(d => {
       if (!byBread[d.breadId]) byBread[d.breadId] = {kg:0,amount:0}
       byBread[d.breadId].kg += parseFloat(d.kg)||0
       byBread[d.breadId].amount += parseFloat(d.amount)||0
     })
-    const rows = Object.entries(byBread).map(([bid,data]) => {
+    return {tot, kg, byBread}
+  }
+
+  const cards = storeList.map(store => {
+    const data = buildStoreData(store)
+    if (!data) return ''
+    const rows = Object.entries(data.byBread).map(([bid,bd]) => {
       const b = BREAD_TYPES.find(x => x.id === bid)
       return `<div class="report-row">
         <span class="rleft">${b ? b.name : bid}</span>
-        <span class="rright">${fmtKg(data.kg)} · ${fmt(data.amount)}</span>
+        <span class="rright">${fmtKg(bd.kg)} · ${fmt(bd.amount)}</span>
       </div>`
     }).join('')
     return `<div class="report-card">
       <div class="rhead">
         <span class="rname">${store.name}</span>
-        <span class="rtotal">${fmt(tot)}</span>
+        <span class="rtotal">${fmt(data.tot)}</span>
       </div>
       ${rows}
     </div>`
   }).join('')
 
-  const reportText = storeList.map(store => {
-    const delivs = dateDelivs.filter(d => d.storeId === store.id)
-    if (!delivs.length) return ''
-    const tot = totForStore(store.id)
-    const byBread = {}
-    delivs.forEach(d => {
-      if (!byBread[d.breadId]) byBread[d.breadId] = {kg:0,amount:0}
-      byBread[d.breadId].kg += parseFloat(d.kg)||0
-      byBread[d.breadId].amount += parseFloat(d.amount)||0
-    })
-    const lines = Object.entries(byBread).map(([bid,data]) => {
+  const now = new Date()
+  const dateHeader = reportPeriod === 'oggi' ? today()
+    : reportPeriod === 'settimana' ? `Settimana ${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`
+    : reportPeriod === 'mese' ? `${now.toLocaleString('it-IT',{month:'long'})} ${now.getFullYear()}`
+    : reportPeriod === 'anno' ? String(now.getFullYear())
+    : reportTitle
+
+  const reportLines = ['━━━━━━━━━━━━━━━━━━━━━━', `🍞 CONSEGNE PANE — ${dateHeader}`, `👤 ${myName}`, '━━━━━━━━━━━━━━━━━━━━━━', '']
+  storeList.forEach(store => {
+    const data = buildStoreData(store)
+    if (!data) return
+    reportLines.push(`📦 ${store.name}`)
+    Object.entries(data.byBread).forEach(([bid,bd]) => {
       const b = BREAD_TYPES.find(x => x.id === bid)
-      return `  ${b ? b.name : bid}: ${data.kg.toFixed(1).replace('.',',')} kg = ${data.amount.toFixed(2).replace('.',',')} €`
-    }).join('\n')
-    return `${store.name}\n${lines}\nTotale: ${tot.toFixed(2).replace('.',',')} €`
-  }).filter(Boolean).join('\n\n')
+      reportLines.push(`  ${(b ? b.name : bid).padEnd(22)} ${bd.kg.toFixed(1).replace('.',',')} kg   ${bd.amount.toFixed(2).replace('.',',')} €`)
+    })
+    reportLines.push(`  ${'TOTALE'.padEnd(22)} ${data.kg.toFixed(1).replace('.',',')} kg   ${data.tot.toFixed(2).replace('.',',')} €`)
+    reportLines.push('')
+  })
+  reportLines.push('━━━━━━━━━━━━━━━━━━━━━━')
+  reportLines.push(`TOTALE GENERALE   ${totKg.toFixed(1).replace('.',',')} kg   ${totGiorno.toFixed(2).replace('.',',')} €`)
+  const reportText = reportLines.join('\n')
 
   const giroOptions = giroList.map(g => `<option value="${g.id}" ${g.id===selGiroId?'selected':''}>${g.name}</option>`).join('')
+  const tabStyle = (p) => `padding:8px 14px;border-radius:20px;border:none;font-size:13px;font-weight:600;cursor:pointer;background:${reportPeriod===p?'#D85A30':'#fff'};color:${reportPeriod===p?'#fff':'#888'}`
 
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
       <h1>Resoconto</h1>
-      <div class="sub">${reportTitle} · Totale: ${fmt(totGiorno)}</div>
+      <div class="sub">${reportTitle} · ${fmtKg(totKg)} · ${fmt(totGiorno)}</div>
+    </div>
+    <div style="padding:10px 12px 0;background:#fff;border-bottom:0.5px solid #e8e8e8;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-shrink:0">
+      ${periods.map(p => `<button style="${tabStyle(p)}" onclick="reportPeriod='${p}';reportGiroId=null;render()">${periodLabel(p)}</button>`).join('')}
     </div>
     <div class="scroll-body">
-      ${giroList.length ? `<div class="field" style="margin-bottom:14px">
+      ${reportPeriod === 'giro' && giroList.length ? `<div class="field" style="margin-bottom:14px">
         <label>Giro da visualizzare</label>
         <select onchange="reportGiroId=this.value;render()">${giroOptions}</select>
       </div>` : ''}
-      ${cards || '<div class="empty">Nessuna consegna in questo giro</div>'}
-      ${cards ? `<button class="btn-secondary" onclick="copyReport()">📋 Copia resoconto</button>` : ''}
+      ${cards || '<div class="empty">Nessuna consegna per questo periodo</div>'}
+      ${cards ? `<button class="btn-secondary" onclick="copyReport()">📋 Copia resoconto da inviare</button>` : ''}
     </div>
     ${renderBottomNav()}
   </div>
