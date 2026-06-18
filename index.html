@@ -516,13 +516,9 @@ function renderHome() {
   const ids = giroStoreIds(giro)
   const storeList = ids.map(id => stores[id]).filter(Boolean)
   const totaleGiro = storeList.reduce((s,st) => s + storeTotal(st.id), 0)
-  const byTerm = (term) => storeList.filter(s => s.paymentTerm === term)
 
-  const renderGroup = (label, list) => {
-    if (!list.length) return ''
-    return `<div class="section-head">${label}</div>
-    <div class="store-grid">
-      ${list.map(s => {
+  const grid = `<div class="store-grid">
+      ${storeList.map(s => {
         const tot = storeTotal(s.id)
         const kg = storeKg(s.id)
         const done = kg > 0
@@ -535,7 +531,6 @@ function renderHome() {
         </div>`
       }).join('')}
     </div>`
-  }
 
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
@@ -548,10 +543,7 @@ function renderHome() {
       </div>
     </div>
     <div class="scroll-body">
-      ${storeList.length === 0 ? `<div class="empty">Questo giro non ha negozi.</div>` : ''}
-      ${renderGroup('Pagano oggi', byTerm('oggi'))}
-      ${renderGroup('Fine settimana', byTerm('settimana'))}
-      ${renderGroup('Fine mese', byTerm('mese'))}
+      ${storeList.length === 0 ? `<div class="empty">Questo giro non ha negozi.</div>` : grid}
       <button class="btn-secondary" onclick="endGiro()" style="margin-top:16px">Termina giro</button>
     </div>
     ${renderBottomNav()}
