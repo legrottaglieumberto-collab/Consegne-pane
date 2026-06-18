@@ -21,7 +21,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .topbar h1{font-size:17px;font-weight:600}
 .topbar .sub{font-size:12px;opacity:0.8;margin-top:2px}
 .topbar-row{display:flex;align-items:center;gap:10px}
-.back-btn{background:none;border:none;color:#fff;font-size:15px;padding:0;cursor:pointer;display:flex;align-items:center;gap:4px}
+.back-btn{background:rgba(255,255,255,0.22);border:none;color:#fff;font-size:21px;line-height:1;width:38px;height:38px;border-radius:50%;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.back-btn:active{background:rgba(255,255,255,0.38)}
 
 /* SCROLL BODY */
 .scroll-body{flex:1;overflow-y:auto;padding:12px;-webkit-overflow-scrolling:touch}
@@ -33,7 +34,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .nav-btn.active{color:#D85A30}
 
 /* STORE GRID */
-.store-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.store-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .store-card{background:#fff;border-radius:14px;border:1.5px solid #e8e8e8;padding:16px 12px;text-align:center;cursor:pointer;transition:transform 0.1s}
 .store-card:active{transform:scale(0.97)}
 .store-card .name{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
@@ -45,12 +46,12 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .done-check{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:#D85A30;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:700}
 .store-card.done .done-check{background:#2a7a2a}
 /* CASELLE APP (quadrate e colorate) */
-.store-card.app{aspect-ratio:1;border:none;border-radius:22px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px;box-shadow:0 3px 8px rgba(0,0,0,0.14)}
-.store-card.app .name{color:#fff;font-size:15px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.18);line-height:1.15}
-.store-card.app .total{color:#fff;font-size:23px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,0.18)}
-.store-card.app .kglbl{font-size:12px;color:rgba(255,255,255,0.92);font-weight:600}
-.store-card.app .done-check{background:#fff;color:#2a7a2a}
-.store-card.app.sel{outline:4px solid #1a1a1a;outline-offset:-2px}
+.store-card.app{aspect-ratio:1;border:none;border-radius:15px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px;box-shadow:0 2px 6px rgba(0,0,0,0.14)}
+.store-card.app .name{color:#fff;font-size:12px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.18);line-height:1.1}
+.store-card.app .total{color:#fff;font-size:15px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,0.18)}
+.store-card.app .kglbl{font-size:10px;color:rgba(255,255,255,0.92);font-weight:600}
+.store-card.app .done-check{background:#fff;color:#2a7a2a;width:18px;height:18px;font-size:10px}
+.store-card.app.sel{outline:3px solid #1a1a1a;outline-offset:-2px}
 .giro-hero{background:#fff;border-radius:16px;padding:28px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
 .giro-hero h2{font-size:19px;font-weight:700}
 .giro-hero p{font-size:13px;color:#888;margin-bottom:6px}
@@ -214,7 +215,8 @@ const BREAD_TYPES = [
   {id:'pucce-olive',name:'Pucce con le olive'},
 ]
 const TERMS = [{id:'oggi',label:'Pagamento oggi'},{id:'settimana',label:'Fine settimana'},{id:'mese',label:'Fine mese'}]
-const KG_VALUES = (() => { const a=[]; for(let v=0.5; v<=20.0001; v+=0.5) a.push(Math.round(v*10)/10); return a })()
+const KG_VALUES = (() => { const a=[]; for(let v=0.5; v<=20.0001; v+=0.5) a.push(Math.round(v*10)/10); for(let v=21; v<=100; v++) a.push(v); return a })()
+const PRICE_VALUES = (() => { const a=[]; for(let v=2.5; v<=6.0001; v+=0.1) a.push(Math.round(v*10)/10); return a })()
 const WHO_COLORS = ['who-0','who-1','who-2','who-3']
 
 // Disegni dei tipi di pane — illustrazioni vettoriali curate (interne, nitide e offline)
@@ -676,7 +678,7 @@ function renderNewGiro() {
   }).join('')
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
-      <button class="back-btn" onclick="goTo('home')">← Annulla</button>
+      <button class="back-btn" onclick="goTo('home')">←</button>
       <h1 style="margin-top:6px">Nuovo giro</h1>
       <div class="sub">Tocca i negozi che vuoi visitare</div>
     </div>
@@ -755,7 +757,7 @@ function renderGiri() {
   }).join('')
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
-      <button class="back-btn" onclick="goTo('home')">← Indietro</button>
+      <button class="back-btn" onclick="goTo('home')">←</button>
       <h1 style="margin-top:6px">Giri di consegna</h1>
     </div>
     <div class="scroll-body">
@@ -833,7 +835,7 @@ function renderStore() {
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
       <div class="topbar-row">
-        <button class="back-btn" onclick="goTo('home')">← Negozi</button>
+        <button class="back-btn" onclick="goTo('home')">←</button>
       </div>
       <div style="margin-top:4px;font-size:18px;font-weight:700">${store.name}</div>
     </div>
@@ -1164,10 +1166,10 @@ function renderSettings() {
 
       <div class="section-head">Codice gruppo</div>
       <div style="background:#fff;border:2px solid #D85A30;border-radius:14px;padding:16px;text-align:center">
-        <div style="font-size:12px;color:#888;margin-bottom:8px">Condividi questo codice: chi lo inserisce vede gli stessi negozi e consegne</div>
+        <div style="font-size:12px;color:#888;margin-bottom:8px">Chi inserisce questo codice riceve <b>subito gli stessi negozi e gli stessi prezzi</b> che hai impostato tu. Non deve inserire niente a mano.</div>
         <div style="font-family:monospace;font-size:32px;font-weight:800;letter-spacing:0.15em;color:#D85A30;margin-bottom:12px">${appCode}</div>
-        <button class="btn-confirm" onclick="shareCode()">📤 Condividi codice</button>
-        <button class="btn-secondary" onclick="copyCode()" style="margin-top:8px">📋 Copia codice</button>
+        <button class="btn-confirm" onclick="shareCode()">📤 Condividi negozi e prezzi</button>
+        <button class="btn-secondary" onclick="copyCode()" style="margin-top:8px">📋 Copia solo il codice</button>
       </div>
       <button class="btn-add" onclick="joinGroupPrompt()" style="margin-top:12px">🔑 Entra in un altro gruppo (inserisci codice)</button>
     </div>
@@ -1230,7 +1232,7 @@ function renderEditStore() {
   const store = isNew ? {name:'',paymentTerm:'settimana'} : (stores[currentStoreId] || {name:'',paymentTerm:'settimana'})
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
-      <button class="back-btn" onclick="goTo('settings')">← Impostazioni</button>
+      <button class="back-btn" onclick="goTo('settings')">←</button>
       <h1 style="margin-top:6px">${isNew ? 'Nuovo negozio' : 'Modifica negozio'}</h1>
     </div>
     <div class="scroll-body">
@@ -1242,7 +1244,7 @@ function renderEditStore() {
       </div>
       <button class="btn-confirm" onclick="saveStore()">${isNew ? 'Crea negozio' : 'Salva modifiche'}</button>
       ${!isNew ? `
-        <button class="btn-confirm" style="background:#fff;color:#D85A30;border:1.5px solid #D85A30;margin-top:10px" onclick="goTo('editPrices','${store.id}')">Gestisci prezzi al kg</button>
+        <button class="btn-confirm" style="background:#fff;color:#D85A30;border:1.5px solid #D85A30;margin-top:10px" onclick="goTo('editPrices','${store.id}')">🍞 Tipi di pane e prezzi</button>
         <button class="btn-delete" onclick="deleteStore('${store.id}')">Elimina negozio</button>
       ` : ''}
     </div>
@@ -1272,23 +1274,30 @@ function deleteStore(id) {
 function renderEditPrices() {
   const store = stores[currentStoreId]
   if (!store) { currentPage = 'settings'; return renderSettings() }
-  const rows = BREAD_TYPES.map(b => {
+  const servedCount = BREAD_TYPES.filter(b => priceFor(currentStoreId, b.id) > 0).length
+  const cards = BREAD_TYPES.map(b => {
     const p = priceFor(currentStoreId, b.id)
-    return `<div class="price-row">
-      <span class="pname">${b.name}</span>
-      <input type="number" min="0" step="0.01" placeholder="0,00" value="${p||''}" data-bread="${b.id}" onchange="savePrice('${currentStoreId}',this.dataset.bread,this.value)">
+    const served = p > 0
+    return `<div class="bread-card ${served ? 'selected' : ''}" onclick="openPriceModal('${b.id}')" style="position:relative">
+      ${served ? `<div class="done-check" style="position:absolute;top:5px;right:5px;width:18px;height:18px;font-size:10px">✓</div>` : ''}
+      <div class="bicon">${breadIcon(b.id)}</div>
+      <span class="bname">${b.name}</span>
+      <span class="bprice">${served ? fmt(p) + '/kg' : 'tocca per aggiungere'}</span>
     </div>`
   }).join('')
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
-      <button class="back-btn" onclick="goTo('editStore','${currentStoreId}')">← Negozio</button>
-      <h1 style="margin-top:6px">Prezzi — ${store.name}</h1>
-      <div class="sub">€ al kg per ogni tipo di pane</div>
+      <div class="topbar-row">
+        <button class="back-btn" onclick="goTo('editStore','${currentStoreId}')">←</button>
+        <div style="flex:1"><h1>Pane e prezzi</h1><div class="sub">${store.name} · ${servedCount} tipi di pane</div></div>
+      </div>
     </div>
     <div class="scroll-body">
-      <div class="price-table">${rows}</div>
+      <p style="font-size:13px;color:#888;margin-bottom:12px">Tocca i tipi di pane che porti in questo negozio e imposta il prezzo al kg.</p>
+      <div class="bread-grid">${cards}</div>
     </div>
-  </div>`
+  </div>
+  ${renderPriceModal()}`
 }
 function savePrice(storeId, breadId, val) {
   const v = parseFloat(val)
@@ -1299,11 +1308,57 @@ function savePrice(storeId, breadId, val) {
   publishSnapshot()
 }
 
+// ─── PREZZO: SELETTORE STILE CHILI (2,50€ → 6,00€) ────────────────
+let priceBread = null
+function renderPriceModal() {
+  const b = priceBread ? BREAD_TYPES.find(x => x.id === priceBread) : null
+  const cur = b ? priceFor(currentStoreId, b.id) : 0
+  return `<div class="modal-overlay ${window._priceOpen ? 'open' : ''}" id="price-modal">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>${b ? b.name : ''} — prezzo al kg</h2>
+        <button class="modal-close" onclick="closePriceModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="section-head">Quanto costa 1 kg? (tocca per confermare)</div>
+        <div class="weight-section">
+          <div class="weight-display">${cur ? fmt(cur) + ' <span class="unit">/kg</span>' : '<span style="color:#ccc">—</span>'}</div>
+          <div class="kg-picker">
+            ${PRICE_VALUES.map(v => `<button class="kg-chip ${cur === v ? 'selected' : ''}" onclick="setPrice(${v})">${fmt(v)}</button>`).join('')}
+          </div>
+        </div>
+        ${cur > 0 ? `<button class="btn-delete" onclick="removePrice()">Non porto questo pane qui</button>` : ''}
+      </div>
+    </div>
+  </div>`
+}
+function openPriceModal(bid) {
+  priceBread = bid
+  window._priceOpen = true
+  render()
+  setTimeout(() => { const s = document.querySelector('#price-modal .kg-chip.selected'); if (s) s.scrollIntoView({block:'nearest'}) }, 50)
+}
+function closePriceModal() { window._priceOpen = false; priceBread = null; render() }
+function setPrice(v) {
+  savePrice(currentStoreId, priceBread, v)
+  window._priceOpen = false; priceBread = null
+  toast('Prezzo impostato ✓')
+  render()
+}
+function removePrice() {
+  if (prices[currentStoreId]) delete prices[currentStoreId][priceBread]
+  pricesNode.get(currentStoreId).get(priceBread).put(0)
+  publishSnapshot()
+  window._priceOpen = false; priceBread = null
+  toast('Rimosso')
+  render()
+}
+
 // ─── EDIT TEAM ────────────────────────────────────────────────────
 function renderEditTeam() {
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
-      <button class="back-btn" onclick="goTo('settings')">← Impostazioni</button>
+      <button class="back-btn" onclick="goTo('settings')">←</button>
       <h1 style="margin-top:6px">Membri del team</h1>
     </div>
     <div class="scroll-body">
