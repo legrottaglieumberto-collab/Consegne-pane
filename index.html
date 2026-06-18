@@ -313,8 +313,28 @@ let giroSel = {}
 let newGiroPersonal = false
 let editDeliveryId = null
 
+// ─── CACHE LOCALE (lista salvata anche offline) ───────────────────
+function loadCache() {
+  try {
+    stores = JSON.parse(localStorage.getItem('cache_stores_' + appCode) || '{}')
+    prices = JSON.parse(localStorage.getItem('cache_prices_' + appCode) || '{}')
+    team = JSON.parse(localStorage.getItem('cache_team_' + appCode) || '[]')
+    giros = JSON.parse(localStorage.getItem('cache_giros_' + appCode) || '{}')
+  } catch (e) {}
+}
+function saveCache() {
+  if (!appCode) return
+  try {
+    localStorage.setItem('cache_stores_' + appCode, JSON.stringify(stores))
+    localStorage.setItem('cache_prices_' + appCode, JSON.stringify(prices))
+    localStorage.setItem('cache_team_' + appCode, JSON.stringify(team))
+    localStorage.setItem('cache_giros_' + appCode, JSON.stringify(giros))
+  } catch (e) {}
+}
+
 // ─── GUN INIT ─────────────────────────────────────────────────────
 function initGun() {
+  loadCache()
   gun = Gun(['https://gun-manhattan.herokuapp.com/gun','https://gun-us.herokuapp.com/gun'])
   db = gun.get('panini-app-' + appCode)
   storesNode = db.get('stores')
@@ -437,6 +457,7 @@ function render() {
   const sbOld = app.querySelector('.scroll-body')
   const savedTop = sbOld ? sbOld.scrollTop : 0
   const samePage = render._lastPage === currentPage
+  saveCache()
   app.innerHTML = renderShell()
   bindEvents()
   if (samePage) {
@@ -1076,12 +1097,33 @@ function renderSettings() {
         </div>
       </div>
 
-      <div class="app-code-box" style="margin-top:16px">
-        Codice gruppo (condividi con i colleghi)<br>
-        <span class="code" style="color:#D85A30">${appCode}</span>
+      <div class="section-head">Codice gruppo</div>
+      <div style="background:#fff;border:2px solid #D85A30;border-radius:14px;padding:16px;text-align:center">
+        <div style="font-size:12px;color:#888;margin-bottom:8px">Condividi questo codice: chi lo inserisce vede gli stessi negozi e consegne</div>
+        <div style="font-family:monospace;font-size:32px;font-weight:800;letter-spacing:0.15em;color:#D85A30;margin-bottom:12px">${appCode}</div>
+        <button class="btn-confirm" onclick="shareCode()">📤 Condividi codice</button>
+        <button class="btn-secondary" onclick="copyCode()" style="margin-top:8px">📋 Copia codice</button>
       </div>
     </div>
   </div>`
+}
+function shareCode() {
+  const txt = 'Entra nel gruppo Consegne Pane! Apri https://legrottaglieumberto-collab.github.io/Consegne-pane/ e inserisci il codice gruppo: ' + appCode
+  if (navigator.share) {
+    navigator.share({title:'Consegne Pane', text:txt}).catch(()=>{})
+  } else {
+    copyCode()
+  }
+}
+function copyCode() {
+  const ta = document.createElement('textarea')
+  ta.value = appCode
+  ta.style.position = 'fixed'; ta.style.left = '-9999px'
+  document.body.appendChild(ta)
+  ta.select()
+  try { document.execCommand('copy') } catch(e) {}
+  document.body.removeChild(ta)
+  toast('Codice copiato: ' + appCode)
 }
 function changeName() {
   myName = ''
