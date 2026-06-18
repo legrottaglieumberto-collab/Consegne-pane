@@ -39,6 +39,15 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .store-card .name{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
 .store-card .total{font-size:20px;font-weight:700;color:#D85A30}
 .store-card .term-badge{font-size:10px;margin-top:4px;padding:2px 8px;border-radius:20px;display:inline-block}
+.store-card{position:relative}
+.store-card.sel{border-color:#D85A30;background:#fff8f6}
+.store-card.done{border-color:#2a7a2a;background:#f3faf3}
+.done-check{position:absolute;top:6px;right:8px;width:20px;height:20px;border-radius:50%;background:#D85A30;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.store-card.done .done-check{background:#2a7a2a}
+.giro-hero{background:#fff;border-radius:16px;padding:28px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.giro-hero h2{font-size:19px;font-weight:700}
+.giro-hero p{font-size:13px;color:#888;margin-bottom:6px}
+.mini-del{background:none;border:none;font-size:18px;cursor:pointer;padding:4px 8px;opacity:0.6}
 .term-oggi{background:#fff3ee;color:#D85A30}
 .term-sett{background:#e8f4fd;color:#1a6fa8}
 .term-mese{background:#edf7ed;color:#2a7a2a}
@@ -282,13 +291,16 @@ let appCode = localStorage.getItem('appCode') || ''
 let myName = localStorage.getItem('myName') || ''
 let currentPage = 'home'
 let currentStoreId = null
-let reportDate = null
-let gun, db, deliveriesNode, storesNode, teamNode, pricesNode
+let reportGiroId = null
+let gun, db, deliveriesNode, storesNode, teamNode, pricesNode, girosNode, activeNode
 
 let stores = {}
 let deliveries = {}
 let team = []
 let prices = {}
+let giros = {}
+let activeGiroId = null
+let giroSel = {}
 
 // ─── GUN INIT ─────────────────────────────────────────────────────
 function initGun() {
@@ -298,6 +310,16 @@ function initGun() {
   deliveriesNode = db.get('deliveries')
   teamNode = db.get('team')
   pricesNode = db.get('prices')
+  girosNode = db.get('giros')
+  activeNode = db.get('activeGiro')
+
+  girosNode.map().on((data, id) => {
+    if (data === null) { delete giros[id]; render(); return }
+    if (data && id) { giros[id] = {...data, id}; render() }
+  })
+  activeNode.on((data) => {
+    if (data) { activeGiroId = data.giroId || null; render() }
+  })
 
   storesNode.map().on((data, id) => {
     if (data === null) { delete stores[id]; render(); return }
@@ -344,13 +366,25 @@ function toast(msg) {
 function todayDeliveries() {
   return Object.values(deliveries).filter(d => d.date === today())
 }
+function activeGiro() {
+  return activeGiroId ? giros[activeGiroId] : null
+}
+function giroStoreIds(g) {
+  return g && g.storeIds ? g.storeIds.split(',').filter(Boolean) : []
+}
+// Consegne del contesto attuale: del giro attivo se c'è, altrimenti di oggi
+function curDeliveries() {
+  return activeGiroId
+    ? Object.values(deliveries).filter(d => d.giroId === activeGiroId)
+    : todayDeliveries()
+}
 function storeTotal(storeId) {
-  return todayDeliveries()
+  return curDeliveries()
     .filter(d => d.storeId === storeId)
     .reduce((s,d) => s + (parseFloat(d.amount)||0), 0)
 }
 function storeKg(storeId) {
-  return todayDeliveries()
+  return curDeliveries()
     .filter(d => d.storeId === storeId)
     .reduce((s,d) => s + (parseFloat(d.kg)||0), 0)
 }
@@ -394,6 +428,8 @@ function renderShell() {
     editStore: renderEditStore,
     editPrices: renderEditPrices,
     editTeam: renderEditTeam,
+    newGiro: renderNewGiro,
+    giri: renderGiri,
   }
   return (renderers[currentPage] || renderHome)()
 }
@@ -451,8 +487,35 @@ function selectName(name) {
 
 // ─── HOME ─────────────────────────────────────────────────────────
 function renderHome() {
-  const storeList = Object.values(stores)
-  const totaleGiorno = storeList.reduce((s,st) => s + storeTotal(st.id), 0)
+  const giro = activeGiro()
+
+  // Nessun giro attivo → schermata "Nuovo giro"
+  if (!giro) {
+    const giriCount = Object.keys(giros).length
+    return `<div class="page active" style="display:flex;flex-direction:column">
+      <div class="topbar">
+        <div class="topbar-row">
+          <div style="flex:1"><div class="sub">Ciao ${myName} · ${today()}</div><h1>Nessun giro in corso</h1></div>
+          <button style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:10px;padding:7px 12px;font-size:13px;cursor:pointer" onclick="goTo('settings')">⚙️</button>
+        </div>
+      </div>
+      <div class="scroll-body">
+        <div class="giro-hero">
+          <div style="font-size:46px">🚚</div>
+          <h2>Nuovo giro di consegne</h2>
+          <p>Scegli i negozi da visitare oggi e avvia il giro.</p>
+          <button class="btn-confirm" onclick="goTo('newGiro')" style="margin-top:6px">+ Crea nuovo giro</button>
+          ${giriCount ? `<button class="btn-secondary" onclick="goTo('giri')" style="margin-top:10px">Vedi giri passati (${giriCount})</button>` : ''}
+        </div>
+      </div>
+      ${renderBottomNav()}
+    </div>`
+  }
+
+  // Giro attivo → mostra solo i negozi del giro
+  const ids = giroStoreIds(giro)
+  const storeList = ids.map(id => stores[id]).filter(Boolean)
+  const totaleGiro = storeList.reduce((s,st) => s + storeTotal(st.id), 0)
   const byTerm = (term) => storeList.filter(s => s.paymentTerm === term)
 
   const renderGroup = (label, list) => {
@@ -462,10 +525,12 @@ function renderHome() {
       ${list.map(s => {
         const tot = storeTotal(s.id)
         const kg = storeKg(s.id)
-        return `<div class="store-card" onclick="goTo('store','${s.id}')">
+        const done = kg > 0
+        return `<div class="store-card ${done?'done':''}" onclick="goTo('store','${s.id}')">
+          ${done ? `<div class="done-check">✓</div>` : ''}
           <div class="name">${s.name}</div>
           <div class="total">${fmt(tot)}</div>
-          ${kg > 0 ? `<div style="font-size:11px;color:#888;margin-top:2px">${fmtKg(kg)}</div>` : ''}
+          ${done ? `<div style="font-size:11px;color:#888;margin-top:2px">${fmtKg(kg)}</div>` : ''}
           <div><span class="term-badge ${termClass(s.paymentTerm)}">${termLabel(s.paymentTerm)}</span></div>
         </div>`
       }).join('')}
@@ -476,20 +541,120 @@ function renderHome() {
     <div class="topbar">
       <div class="topbar-row">
         <div style="flex:1">
-          <div class="sub">Ciao ${myName} · ${today()}</div>
-          <h1>Totale giornata: ${fmt(totaleGiorno)}</h1>
+          <div class="sub">${giro.name} · ${myName}</div>
+          <h1>Totale giro: ${fmt(totaleGiro)}</h1>
         </div>
-        <button style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:10px;padding:7px 12px;font-size:13px;cursor:pointer" onclick="goTo('settings')">⚙️</button>
+        <button style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:10px;padding:7px 12px;font-size:13px;cursor:pointer" onclick="goTo('giri')">Giri</button>
       </div>
     </div>
     <div class="scroll-body">
-      ${storeList.length === 0 ? `<div class="empty">Nessun negozio configurato.<br>Vai in Impostazioni per aggiungerne uno.</div>` : ''}
+      ${storeList.length === 0 ? `<div class="empty">Questo giro non ha negozi.</div>` : ''}
       ${renderGroup('Pagano oggi', byTerm('oggi'))}
       ${renderGroup('Fine settimana', byTerm('settimana'))}
       ${renderGroup('Fine mese', byTerm('mese'))}
+      <button class="btn-secondary" onclick="endGiro()" style="margin-top:16px">Termina giro</button>
     </div>
     ${renderBottomNav()}
   </div>`
+}
+
+// ─── NUOVO GIRO (selezione negozi) ────────────────────────────────
+function renderNewGiro() {
+  const storeList = Object.values(stores)
+  const selCount = Object.values(giroSel).filter(Boolean).length
+  const cards = storeList.map(s => {
+    const sel = !!giroSel[s.id]
+    return `<div class="store-card ${sel?'sel':''}" onclick="toggleGiroStore('${s.id}')">
+      ${sel ? `<div class="done-check">✓</div>` : ''}
+      <div class="name">${s.name}</div>
+      <div><span class="term-badge ${termClass(s.paymentTerm)}">${termLabel(s.paymentTerm)}</span></div>
+    </div>`
+  }).join('')
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo('home')">← Annulla</button>
+      <h1 style="margin-top:6px">Nuovo giro</h1>
+      <div class="sub">Tocca i negozi che vuoi visitare</div>
+    </div>
+    <div class="scroll-body">
+      ${storeList.length === 0 ? `<div class="empty">Nessun negozio. Vai in Impostazioni per aggiungerne.</div>` : `<div class="store-grid">${cards}</div>`}
+    </div>
+    <div style="padding:12px;background:#fff;border-top:0.5px solid #e0e0e0">
+      <button class="btn-confirm" ${selCount?'':'disabled'} onclick="startGiro()">Avvia giro (${selCount} negozi)</button>
+    </div>
+  </div>`
+}
+function toggleGiroStore(id) {
+  giroSel[id] = !giroSel[id]
+  render()
+}
+function startGiro() {
+  const ids = Object.keys(giroSel).filter(k => giroSel[k])
+  if (!ids.length) return
+  const id = uid()
+  const giro = {
+    name: 'Giro ' + today() + ' ' + nowTs(),
+    storeIds: ids.join(','),
+    date: today(),
+    who: myName,
+    ts: Date.now()
+  }
+  girosNode.get(id).put(giro)
+  activeNode.put({giroId: id})
+  activeGiroId = id
+  giroSel = {}
+  toast('Giro avviato ✓')
+  goTo('home')
+}
+function endGiro() {
+  if (!confirm('Terminare il giro in corso? Le consegne restano salvate nel resoconto.')) return
+  activeNode.put({giroId: ''})
+  activeGiroId = null
+  goTo('home')
+}
+
+// ─── GIRI (gestione / cancellazione) ──────────────────────────────
+function renderGiri() {
+  const list = Object.values(giros).sort((a,b) => (b.ts||0) - (a.ts||0))
+  const giroTotal = (g) => Object.values(deliveries).filter(d => d.giroId === g.id).reduce((s,d)=>s+(parseFloat(d.amount)||0),0)
+  const rows = list.map(g => {
+    const isActive = g.id === activeGiroId
+    const nStores = giroStoreIds(g).length
+    return `<div class="settings-item" style="${isActive?'border:2px solid #D85A30':''}">
+      <div class="si-left" onclick="activateGiro('${g.id}')" style="flex:1">
+        <span class="si-name">${g.name} ${isActive?'<span style="color:#D85A30;font-size:11px">• in corso</span>':''}</span>
+        <span class="si-sub">${nStores} negozi · ${fmt(giroTotal(g))} · ${g.who||''}</span>
+      </div>
+      <button class="mini-del" onclick="deleteGiro('${g.id}')">🗑</button>
+    </div>`
+  }).join('')
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo('home')">← Indietro</button>
+      <h1 style="margin-top:6px">Giri di consegna</h1>
+    </div>
+    <div class="scroll-body">
+      <button class="btn-add" onclick="goTo('newGiro')">+ Nuovo giro</button>
+      <div class="section-head">Giri salvati</div>
+      ${list.length ? `<div class="settings-list">${rows}</div>` : `<div class="empty">Nessun giro ancora.</div>`}
+      <p style="font-size:12px;color:#aaa;margin-top:12px">Tocca un giro per riaprirlo. Il cestino lo cancella.</p>
+    </div>
+    ${renderBottomNav()}
+  </div>`
+}
+function activateGiro(id) {
+  activeNode.put({giroId: id})
+  activeGiroId = id
+  goTo('home')
+}
+function deleteGiro(id) {
+  if (!confirm('Cancellare questo giro? Le consegne registrate in questo giro verranno rimosse.')) return
+  Object.values(deliveries).filter(d => d.giroId === id).forEach(d => deliveriesNode.get(d.id).put(null))
+  girosNode.get(id).put(null)
+  delete giros[id]
+  if (activeGiroId === id) { activeNode.put({giroId: ''}); activeGiroId = null }
+  toast('Giro cancellato')
+  render()
 }
 
 // ─── STORE DETAIL ─────────────────────────────────────────────────
@@ -651,7 +816,8 @@ function confirmDelivery() {
     who: myName,
     date: today(),
     time: nowTs(),
-    ts: Date.now()
+    ts: Date.now(),
+    giroId: activeGiroId || ''
   }
   deliveriesNode.get(id).put(delivery)
   closeDelivery()
@@ -661,17 +827,16 @@ function confirmDelivery() {
 // ─── REPORT ───────────────────────────────────────────────────────
 function renderReport() {
   const storeList = Object.values(stores)
-  // Tutte le date che hanno consegne, ordinate dalla più recente
-  const allDates = [...new Set(Object.values(deliveries).map(d => d.date).filter(Boolean))]
-  allDates.sort((a,b) => {
-    const pa = a.split('/').reverse().join(''), pb = b.split('/').reverse().join('')
-    return pb.localeCompare(pa)
-  })
-  if (!allDates.includes(today())) allDates.unshift(today())
-  const selDate = reportDate && allDates.includes(reportDate) ? reportDate : today()
-  const dateDelivs = Object.values(deliveries).filter(d => d.date === selDate)
+  // Giri ordinati dal più recente; più una voce "Giorno di oggi" per consegne senza giro
+  const giroList = Object.values(giros).sort((a,b) => (b.ts||0) - (a.ts||0))
+  const selGiroId = reportGiroId !== null ? reportGiroId : (activeGiroId || (giroList[0] ? giroList[0].id : ''))
+  const selGiro = giros[selGiroId]
+  const dateDelivs = selGiroId
+    ? Object.values(deliveries).filter(d => d.giroId === selGiroId)
+    : Object.values(deliveries).filter(d => d.date === today() && !d.giroId)
   const totForStore = (id) => dateDelivs.filter(d => d.storeId === id).reduce((s,d)=>s+(parseFloat(d.amount)||0),0)
   const totGiorno = storeList.reduce((s,st) => s + totForStore(st.id), 0)
+  const reportTitle = selGiro ? selGiro.name : 'Consegne di oggi'
 
   const cards = storeList.map(store => {
     const delivs = dateDelivs.filter(d => d.storeId === store.id)
@@ -716,19 +881,19 @@ function renderReport() {
     return `${store.name}\n${lines}\nTotale: ${tot.toFixed(2).replace('.',',')} €`
   }).filter(Boolean).join('\n\n')
 
-  const dateOptions = allDates.map(d => `<option value="${d}" ${d===selDate?'selected':''}>${d===today()?'Oggi — '+d:d}</option>`).join('')
+  const giroOptions = giroList.map(g => `<option value="${g.id}" ${g.id===selGiroId?'selected':''}>${g.name}</option>`).join('')
 
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
       <h1>Resoconto</h1>
-      <div class="sub">${selDate===today()?'Oggi':'Giorno passato'} · Totale: ${fmt(totGiorno)}</div>
+      <div class="sub">${reportTitle} · Totale: ${fmt(totGiorno)}</div>
     </div>
     <div class="scroll-body">
-      <div class="field" style="margin-bottom:14px">
-        <label>Giorno da visualizzare</label>
-        <select onchange="reportDate=this.value;render()">${dateOptions}</select>
-      </div>
-      ${cards || '<div class="empty">Nessuna consegna in questo giorno</div>'}
+      ${giroList.length ? `<div class="field" style="margin-bottom:14px">
+        <label>Giro da visualizzare</label>
+        <select onchange="reportGiroId=this.value;render()">${giroOptions}</select>
+      </div>` : ''}
+      ${cards || '<div class="empty">Nessuna consegna in questo giro</div>'}
       ${cards ? `<button class="btn-secondary" onclick="copyReport()">📋 Copia resoconto</button>` : ''}
     </div>
     ${renderBottomNav()}
@@ -907,7 +1072,7 @@ function renderBottomNav() {
     {page:'report',label:'Resoconto',icon:`<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>`},
     {page:'settings',label:'Impostazioni',icon:`<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>`},
   ]
-  const activePage = ['editStore','editPrices','editTeam'].includes(currentPage) ? 'settings' : currentPage === 'store' ? 'home' : currentPage
+  const activePage = ['editStore','editPrices','editTeam'].includes(currentPage) ? 'settings' : ['store','newGiro','giri'].includes(currentPage) ? 'home' : currentPage
   return `<nav class="bottomnav">
     ${navItems.map(n => `
       <button class="nav-btn ${activePage === n.page ? 'active' : ''}" onclick="goTo('${n.page}')">
