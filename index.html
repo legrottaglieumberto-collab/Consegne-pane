@@ -300,7 +300,7 @@ let currentPage = 'home'
 let currentStoreId = null
 let reportGiroId = null
 let reportPeriod = 'giro'
-let gun, db, deliveriesNode, storesNode, teamNode, pricesNode, girosNode, activeNode
+let gun, db, deliveriesNode, storesNode, teamNode, pricesNode, girosNode, activeNode, snapshotNode
 
 let stores = {}
 let deliveries = {}
@@ -366,6 +366,22 @@ function tryImportFromLink() {
   } catch (e) { return false }
 }
 // Ripubblica lo snapshot su Gun, così la lista giusta resta per tutti
+// Snapshot unico salvato sul server sotto il codice gruppo: chi digita
+// il codice riceve subito negozi + prezzi + team in un colpo solo.
+function publishSnapshot() {
+  if (!snapshotNode) return
+  try { snapshotNode.put({ json: JSON.stringify({ s: stores, p: prices, t: team }) }) } catch (e) {}
+}
+function applySnapshot(d) {
+  if (!d || !d.json) return
+  try {
+    const o = JSON.parse(d.json)
+    if (o.s) Object.entries(o.s).forEach(([id, st]) => { if (!stores[id]) stores[id] = { ...st, id } })
+    if (o.p) Object.entries(o.p).forEach(([sid, bp]) => { prices[sid] = { ...(prices[sid] || {}), ...bp } })
+    if (o.t && o.t.length && !team.length) team = o.t
+    render()
+  } catch (e) {}
+}
 function applyImportToGun(snap) {
   try {
     if (snap.s) Object.entries(snap.s).forEach(([id, st]) =>
@@ -387,6 +403,8 @@ function initGun() {
   pricesNode = db.get('prices')
   girosNode = db.get('giros')
   activeNode = db.get('activeGiro')
+  snapshotNode = db.get('snapshot')
+  snapshotNode.on(applySnapshot)
 
   girosNode.map().on((data, id) => {
     if (data === null) { delete giros[id]; render(); return }
@@ -416,7 +434,7 @@ function initGun() {
   })
 
   // Se siamo entrati da un link con snapshot, ripubblica lista+prezzi su Gun
-  if (window._pendingImport) { applyImportToGun(window._pendingImport); window._pendingImport = null }
+  if (window._pendingImport) { applyImportToGun(window._pendingImport); publishSnapshot(); window._pendingImport = null }
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────
@@ -1236,13 +1254,17 @@ function saveStore() {
   if (!name) { toast('Inserisci il nome del negozio'); return }
   const id = currentStoreId === 'new' ? uid() : currentStoreId
   storesNode.get(id).put({name, paymentTerm: term})
+  stores[id] = {name, paymentTerm: term, id}
   currentStoreId = id
+  publishSnapshot()
   toast('Salvato ✓')
   goTo('settings')
 }
 function deleteStore(id) {
   if (!confirm('Eliminare questo negozio?')) return
   storesNode.get(id).put(null)
+  delete stores[id]
+  publishSnapshot()
   goTo('settings')
 }
 
@@ -1274,6 +1296,7 @@ function savePrice(storeId, breadId, val) {
   if (!prices[storeId]) prices[storeId] = {}
   prices[storeId][breadId] = v
   pricesNode.get(storeId).get(breadId).put(v)
+  publishSnapshot()
 }
 
 // ─── EDIT TEAM ────────────────────────────────────────────────────
@@ -1298,6 +1321,7 @@ function saveTeam() {
   const members = val.split(',').map(s => s.trim()).filter(Boolean)
   team = members
   teamNode.put({members: members.join(',')})
+  publishSnapshot()
   toast('Team aggiornato ✓')
   goTo('settings')
 }
