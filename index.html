@@ -433,8 +433,17 @@ function render() {
   const app = document.getElementById('app')
   if (!appCode) { app.innerHTML = renderSetup(); return }
   if (!myName) { app.innerHTML = renderLogin(); return }
+  // Mantieni la posizione di scorrimento quando resti sulla stessa schermata
+  const sbOld = app.querySelector('.scroll-body')
+  const savedTop = sbOld ? sbOld.scrollTop : 0
+  const samePage = render._lastPage === currentPage
   app.innerHTML = renderShell()
   bindEvents()
+  if (samePage) {
+    const sbNew = app.querySelector('.scroll-body')
+    if (sbNew) sbNew.scrollTop = savedTop
+  }
+  render._lastPage = currentPage
 }
 
 function renderShell() {
