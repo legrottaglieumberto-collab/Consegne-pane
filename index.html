@@ -773,7 +773,6 @@ function renderDeliveryModal() {
         return `<div class="bread-card ${selBread === b.id ? 'selected' : ''}" onclick="selectBread('${b.id}')">
           <div class="bicon">${breadIcon(b.id)}</div>
           <span class="bname">${b.name}</span>
-          <span class="bprice">${fmt(p)}/kg</span>
         </div>`
       }).join('')}</div>`
     : `<div class="bread-empty">Per questo negozio non hai impostato nessun prezzo.<br>Vai in Impostazioni → ${store ? store.name : 'negozio'} → Prezzi e imposta i tipi di pane che porti qui.</div>`
