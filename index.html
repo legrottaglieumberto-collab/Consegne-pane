@@ -332,6 +332,50 @@ function saveCache() {
   } catch (e) {}
 }
 
+// ─── SNAPSHOT NEL CODICE/LINK CONDIVISO ───────────────────────────
+// Il link di condivisione porta con sé negozi + prezzi + team, così
+// chi entra vede subito la lista giusta anche se la sync Gun è lenta.
+function buildSnapshot() {
+  return { c: appCode, s: stores, p: prices, t: team }
+}
+function encodeSnapshot(snap) {
+  return encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(snap)))))
+}
+function decodeSnapshot(str) {
+  return JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(str)))))
+}
+function buildShareLink() {
+  return 'https://legrottaglieumberto-collab.github.io/Consegne-pane/#d=' + encodeSnapshot(buildSnapshot())
+}
+// All'avvio: se il link contiene uno snapshot, importalo (gruppo + lista + prezzi)
+function tryImportFromLink() {
+  const m = (location.hash || '').match(/[#&]d=([^&]+)/)
+  if (!m) return false
+  try {
+    const snap = decodeSnapshot(m[1])
+    if (!snap || !snap.c) return false
+    appCode = snap.c
+    localStorage.setItem('appCode', appCode)
+    // Semina subito la cache locale: lista e prezzi disponibili all'istante
+    if (snap.s) localStorage.setItem('cache_stores_' + appCode, JSON.stringify(snap.s))
+    if (snap.p) localStorage.setItem('cache_prices_' + appCode, JSON.stringify(snap.p))
+    if (snap.t) localStorage.setItem('cache_team_' + appCode, JSON.stringify(snap.t))
+    window._pendingImport = snap
+    history.replaceState(null, '', location.pathname + location.search)
+    return true
+  } catch (e) { return false }
+}
+// Ripubblica lo snapshot su Gun, così la lista giusta resta per tutti
+function applyImportToGun(snap) {
+  try {
+    if (snap.s) Object.entries(snap.s).forEach(([id, st]) =>
+      storesNode.get(id).put({ name: st.name, paymentTerm: st.paymentTerm || 'settimana' }))
+    if (snap.p) Object.entries(snap.p).forEach(([sid, bp]) =>
+      Object.entries(bp).forEach(([bid, v]) => pricesNode.get(sid).get(bid).put(v)))
+    if (snap.t && snap.t.length) teamNode.put({ members: snap.t.join(',') })
+  } catch (e) {}
+}
+
 // ─── GUN INIT ─────────────────────────────────────────────────────
 function initGun() {
   loadCache()
@@ -370,6 +414,9 @@ function initGun() {
       render()
     }
   })
+
+  // Se siamo entrati da un link con snapshot, ripubblica lista+prezzi su Gun
+  if (window._pendingImport) { applyImportToGun(window._pendingImport); window._pendingImport = null }
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────
@@ -1124,11 +1171,19 @@ function joinGroupPrompt() {
   goTo('home')
 }
 function shareCode() {
-  const txt = 'Entra nel gruppo Consegne Pane! Apri https://legrottaglieumberto-collab.github.io/Consegne-pane/ e inserisci il codice gruppo: ' + appCode
+  const link = buildShareLink()
+  const txt = 'Entra nel gruppo Consegne Pane! Apri questo link: ' + link + '\n\nVedrai già la lista dei negozi e i prezzi giusti. (Codice gruppo: ' + appCode + ')'
   if (navigator.share) {
     navigator.share({title:'Consegne Pane', text:txt}).catch(()=>{})
   } else {
-    copyCode()
+    const ta = document.createElement('textarea')
+    ta.value = txt
+    ta.style.position = 'fixed'; ta.style.left = '-9999px'
+    document.body.appendChild(ta)
+    ta.select()
+    try { document.execCommand('copy') } catch(e) {}
+    document.body.removeChild(ta)
+    toast('Link copiato (con lista e prezzi) ✓')
   }
 }
 function copyCode() {
@@ -1271,6 +1326,7 @@ function bindEvents() {
 }
 
 // ─── START ────────────────────────────────────────────────────────
+tryImportFromLink()
 if (appCode) initGun()
 render()
 </script>
