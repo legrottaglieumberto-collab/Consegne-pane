@@ -531,7 +531,7 @@ function renderHome() {
           <div class="name">${s.name}</div>
           <div class="total">${fmt(tot)}</div>
           ${done ? `<div style="font-size:11px;color:#888;margin-top:2px">${fmtKg(kg)}</div>` : ''}
-          <div><span class="term-badge ${termClass(s.paymentTerm)}">${termLabel(s.paymentTerm)}</span></div>
+          ${s.paymentTerm !== 'oggi' ? `<div><span class="term-badge ${termClass(s.paymentTerm)}">${termLabel(s.paymentTerm)}</span></div>` : ''}
         </div>`
       }).join('')}
     </div>`
@@ -567,7 +567,7 @@ function renderNewGiro() {
     return `<div class="store-card ${sel?'sel':''}" onclick="toggleGiroStore('${s.id}')">
       ${sel ? `<div class="done-check">✓</div>` : ''}
       <div class="name">${s.name}</div>
-      <div><span class="term-badge ${termClass(s.paymentTerm)}">${termLabel(s.paymentTerm)}</span></div>
+      ${s.paymentTerm !== 'oggi' ? `<div><span class="term-badge ${termClass(s.paymentTerm)}">${termLabel(s.paymentTerm)}</span></div>` : ''}
     </div>`
   }).join('')
   return `<div class="page active" style="display:flex;flex-direction:column">
