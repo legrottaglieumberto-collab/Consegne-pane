@@ -1104,8 +1104,24 @@ function renderSettings() {
         <button class="btn-confirm" onclick="shareCode()">📤 Condividi codice</button>
         <button class="btn-secondary" onclick="copyCode()" style="margin-top:8px">📋 Copia codice</button>
       </div>
+      <button class="btn-add" onclick="joinGroupPrompt()" style="margin-top:12px">🔑 Entra in un altro gruppo (inserisci codice)</button>
     </div>
   </div>`
+}
+function joinGroupPrompt() {
+  const code = prompt('Inserisci il codice del gruppo a cui vuoi accedere:')
+  if (!code) return
+  const c = code.trim().toUpperCase()
+  if (c.length < 4) { toast('Codice non valido'); return }
+  if (c === appCode) { toast('Sei già in questo gruppo'); return }
+  localStorage.setItem('appCode', c)
+  appCode = c
+  stores = {}; deliveries = {}; prices = {}; team = []; giros = {}
+  activeGiroId = null
+  personalActiveGiroId = null; localStorage.removeItem('personalActiveGiroId')
+  initGun()
+  toast('Entrato nel gruppo ' + c)
+  goTo('home')
 }
 function shareCode() {
   const txt = 'Entra nel gruppo Consegne Pane! Apri https://legrottaglieumberto-collab.github.io/Consegne-pane/ e inserisci il codice gruppo: ' + appCode
