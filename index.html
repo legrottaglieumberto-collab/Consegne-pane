@@ -49,14 +49,16 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 /* Schede negozio a DIMENSIONE FISSA: aspect-ratio 1 + overflow hidden,
    il contenuto (nome lungo, note, prodotti) non cambia mai la misura */
 .store-card.app{aspect-ratio:1;border:none;border-radius:13px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:5px 4px;box-shadow:0 2px 5px rgba(0,0,0,0.14);overflow:hidden}
-.store-card.app .name{color:#fff;font-size:11px;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,0.18);line-height:1.05;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.store-card.app .total{color:#fff;font-size:13px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,0.18)}
+.store-card.app .name{color:#fff;font-size:14px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,0.45);line-height:1.08;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.store-card.app .total{color:#fff;font-size:15px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,0.45)}
 .store-card.app .kglbl{font-size:9px;color:rgba(255,255,255,0.92);font-weight:600}
-.store-card.app .done-check{background:#fff;color:#2a7a2a;width:16px;height:16px;font-size:9px;top:4px;right:4px}
-.store-card.app.sel{outline:3px solid #1a1a1a;outline-offset:-2px}
+.store-card.app .done-check{background:#fff;color:#1E5A41;width:17px;height:17px;font-size:10px;top:4px;right:4px}
+.store-card.app.sel{outline:3px solid #ffe06a;outline-offset:-2px}
+/* riga saldo arretrato sulla scheda (giallo ben visibile) */
+.debt-line{margin-top:2px;font-size:10px;font-weight:800;padding:1px 6px;border-radius:6px;background:#ffd60a;color:#7a1f00;line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:none}
 /* pillola 'Pagato' sulla scheda (toggle rapido) */
-.paid-pill{margin-top:2px;font-size:9px;font-weight:700;padding:1px 7px;border-radius:20px;background:rgba(255,255,255,0.28);color:#fff;line-height:1.4;cursor:pointer}
-.paid-pill.on{background:#fff;color:#2a7a2a}
+.paid-pill{margin-top:2px;font-size:10px;font-weight:800;padding:2px 9px;border-radius:20px;background:rgba(0,0,0,0.28);color:#fff;line-height:1.5;cursor:pointer}
+.paid-pill.on{background:#ffe06a;color:#1a1a1a}
 /* puntino frequenza pagamento in alto a sinistra */
 .freq-dot{position:absolute;top:5px;left:5px;width:9px;height:9px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.85)}
 .freq-giornaliero{background:#fff}
@@ -169,14 +171,14 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .price-row input{width:72px;background:#f5f4f0;border:none;border-radius:8px;padding:7px 10px;font-size:14px;text-align:right;color:#1a1a1a}
 
 /* TOGGLE SWITCH (Pagato) */
-.switch{position:relative;display:inline-block;width:52px;height:30px;flex-shrink:0}
+.switch{position:relative;display:inline-block;width:68px;height:38px;flex-shrink:0}
 .switch input{display:none}
-.switch .track{position:absolute;inset:0;background:#ccc;border-radius:30px;transition:0.2s}
-.switch .knob{position:absolute;top:3px;left:3px;width:24px;height:24px;background:#fff;border-radius:50%;transition:0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
-.switch input:checked + .track{background:#2a7a2a}
-.switch input:checked + .track .knob{transform:translateX(22px)}
-.pay-row{background:#fff;border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.pay-row .pl{font-size:15px;font-weight:600}
+.switch .track{position:absolute;inset:0;background:#bbb;border-radius:38px;transition:0.2s}
+.switch .knob{position:absolute;top:4px;left:4px;width:30px;height:30px;background:#fff;border-radius:50%;transition:0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.35)}
+.switch input:checked + .track{background:#1E7A3A}
+.switch input:checked + .track .knob{transform:translateX(30px)}
+.pay-row{background:#fff;border-radius:14px;padding:16px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.pay-row .pl{font-size:17px;font-weight:700}
 
 /* STEPPER PREZZO/QUANTITÀ */
 .stepper{display:flex;align-items:center;gap:12px;justify-content:center;margin:6px 0 14px}
@@ -349,7 +351,7 @@ let currentPage = 'home'
 let currentStoreId = null
 let reportGiroId = null
 let reportPeriod = 'giro'
-let gun, db, deliveriesNode, storesNode, teamNode, pricesNode, girosNode, activeNode, snapshotNode, standardNode, paidNode
+let gun, db, deliveriesNode, storesNode, teamNode, pricesNode, girosNode, activeNode, snapshotNode, standardNode, paidNode, balancesNode
 
 let stores = {}
 let deliveries = {}
@@ -357,6 +359,7 @@ let team = []
 let prices = {}
 let standards = {}   // quantitativi standard del mattino: {storeId:{prodId:qty}}
 let paid = {}        // stato 'pagato oggi': {storeId:{date,paid}}
+let balances = {}    // saldo arretrato non riscosso per negozio: {storeId:amount}
 let giros = {}
 let activeGiroId = null
 let personalActiveGiroId = localStorage.getItem('personalActiveGiroId') || null
@@ -372,6 +375,9 @@ function loadCache() {
     standards = JSON.parse(localStorage.getItem('cache_standards_' + appCode) || '{}')
     team = JSON.parse(localStorage.getItem('cache_team_' + appCode) || '[]')
     giros = JSON.parse(localStorage.getItem('cache_giros_' + appCode) || '{}')
+    deliveries = JSON.parse(localStorage.getItem('cache_deliveries_' + appCode) || '{}')
+    balances = JSON.parse(localStorage.getItem('cache_balances_' + appCode) || '{}')
+    paid = JSON.parse(localStorage.getItem('cache_paid_' + appCode) || '{}')
   } catch (e) {}
 }
 function saveCache() {
@@ -382,6 +388,9 @@ function saveCache() {
     localStorage.setItem('cache_standards_' + appCode, JSON.stringify(standards))
     localStorage.setItem('cache_team_' + appCode, JSON.stringify(team))
     localStorage.setItem('cache_giros_' + appCode, JSON.stringify(giros))
+    localStorage.setItem('cache_deliveries_' + appCode, JSON.stringify(deliveries))
+    localStorage.setItem('cache_balances_' + appCode, JSON.stringify(balances))
+    localStorage.setItem('cache_paid_' + appCode, JSON.stringify(paid))
   } catch (e) {}
 }
 
@@ -464,6 +473,9 @@ function initGun() {
   snapshotNode.on(applySnapshot)
   standardNode = db.get('standards')
   paidNode = db.get('paid')
+  balancesNode = db.get('balances')
+  // reset di inizio giornata (usa la cache locale appena caricata)
+  checkDailyReset()
 
   girosNode.map().on((data, id) => {
     if (data === null) { delete giros[id]; render(); return }
@@ -500,6 +512,9 @@ function initGun() {
   })
   paidNode.map().on((data, id) => {
     if (data && id) { paid[id] = {date: data.date, paid: !!data.paid}; render() }
+  })
+  balancesNode.map().on((data, id) => {
+    if (data && id && typeof data.amount !== 'undefined') { balances[id] = parseFloat(data.amount) || 0; render() }
   })
 
   // Se siamo entrati da un link con snapshot, ripubblica lista+prezzi su Gun
@@ -589,7 +604,8 @@ function togglePaid(storeId, ev) {
   const v = !isPaid(storeId)
   paid[storeId] = {date: today(), paid: v}
   if (paidNode) paidNode.get(storeId).put({date: today(), paid: v})
-  toast(v ? '✓ Pagato' : 'Segnato non pagato')
+  if (v) setBalance(storeId, 0)   // ha saldato: azzera l'arretrato
+  toast(v ? '✓ Pagato, saldo azzerato' : 'Segnato non pagato')
   render()
 }
 // Totale da riscuotere OGGI: solo negozi del giro con frequenza Giornaliero
@@ -604,7 +620,66 @@ function totalDaRiscuotere() {
 function stdAlreadyLoaded(storeId) {
   return curDeliveries().some(d => d.storeId === storeId && d.std)
 }
-const CARD_COLORS = ['#E8804A','#5B8DEF','#3FB984','#B86BD6','#EFA93F','#E0617A','#4FC3C7','#7C83E8','#F2784B','#52A8D9']
+// ─── SALDO ARRETRATO NON RISCOSSO ─────────────────────────────────
+function balanceFor(storeId) {
+  return balances[storeId] ? parseFloat(balances[storeId]) || 0 : 0
+}
+function setBalance(storeId, v) {
+  v = Math.max(0, Math.round(v * 100) / 100)
+  balances[storeId] = v
+  if (balancesNode) balancesNode.get(storeId).put({amount: v})
+}
+function deliveredOn(storeId, dateStr) {
+  return Object.values(deliveries)
+    .filter(d => d.storeId === storeId && d.date === dateStr)
+    .reduce((s, d) => s + (parseFloat(d.amount) || 0), 0)
+}
+function wasPaidOn(storeId, dateStr) {
+  const p = paid[storeId]
+  return !!(p && p.date === dateStr && p.paid)
+}
+// data "GG/MM/AAAA" → intero AAAAMMGG confrontabile
+function dateNum(s) {
+  const p = (s || '').split('/'); if (p.length !== 3) return 0
+  return (+p[2]) * 10000 + (+p[1]) * 100 + (+p[0])
+}
+// Reset di inizio giornata. Alla prima apertura di un nuovo giorno:
+//  - le consegne dei giorni passati non ancora conteggiate, se quel giorno il
+//    negozio non era 'pagato', diventano saldo arretrato (flag d.accrued per
+//    evitare doppi conteggi anche tra dispositivi);
+//  - il giro del giorno prima viene chiuso → home pulita.
+// Le consegne restano nello storico (resoconto filtra per data).
+function checkDailyReset() {
+  const td = today()
+  let startDate = localStorage.getItem('balanceStart_' + appCode)
+  if (!startDate) { startDate = td; localStorage.setItem('balanceStart_' + appCode, td) }
+  const last = localStorage.getItem('lastSessionDate_' + appCode)
+  const startN = dateNum(startDate), tdN = dateNum(td)
+  let changed = false
+  Object.values(deliveries).forEach(d => {
+    const dn = dateNum(d.date)
+    if (dn && dn < tdN && dn >= startN && !d.accrued) {
+      if (!wasPaidOn(d.storeId, d.date)) {
+        setBalance(d.storeId, balanceFor(d.storeId) + (parseFloat(d.amount) || 0))
+        changed = true
+      }
+      deliveries[d.id] = {...d, accrued: true}
+      if (deliveriesNode) deliveriesNode.get(d.id).put({accrued: true})
+    }
+  })
+  if (last && last !== td) {
+    // chiude il giro del giorno precedente → la home riparte pulita
+    activeGiroId = null
+    personalActiveGiroId = null
+    localStorage.removeItem('personalActiveGiroId')
+    if (activeNode) activeNode.put({giroId: ''})
+    changed = true
+  }
+  if (changed) saveCache()
+  localStorage.setItem('lastSessionDate_' + appCode, td)
+}
+// Colori scuri ad alto contrasto: testo bianco sopra → leggibili anche al sole
+const CARD_COLORS = ['#27406B','#7A2330','#1E5A41','#5A2C6B','#8A5210','#2C3E50','#374B86','#7A2750','#155E6B','#5C3A14']
 function cardColor(i) { return CARD_COLORS[i % CARD_COLORS.length] }
 function whoIndex(name) {
   const i = team.indexOf(name)
@@ -752,11 +827,13 @@ function renderHome() {
         const tot = storeTotal(s.id)
         const done = storeKg(s.id) > 0
         const paidOn = isPaid(s.id)
+        const debt = balanceFor(s.id)
         return `<div class="store-card app ${done?'done':''}" style="background:${cardColor(i)}" onclick="goTo('store','${s.id}')">
           <div class="freq-dot ${storeFreq(s)==='giornaliero'?'freq-giornaliero':'freq-altro'}"></div>
           ${done ? `<div class="done-check">✓</div>` : ''}
           <div class="name">${s.name}</div>
           <div class="total">${fmt(tot)}</div>
+          ${debt > 0 ? `<div class="debt-line">deve ${fmt(debt)}</div>` : ''}
           <div class="paid-pill ${paidOn?'on':''}" onclick="togglePaid('${s.id}',event)">${paidOn?'Pagato ✓':'Pagato?'}</div>
         </div>`
       }).join('')}
@@ -994,6 +1071,7 @@ function renderStore() {
   const paidOn = isPaid(store.id)
   const hasStd = BREAD_TYPES.some(b => standardFor(store.id, b.id) > 0)
   const freq = storeFreq(store)
+  const debt = balanceFor(store.id)
 
   return `<div class="page active" style="display:flex;flex-direction:column">
     <div class="topbar">
@@ -1009,8 +1087,11 @@ function renderStore() {
       <div class="term">${termLabel(store.paymentTerm)}</div>
     </div>
     <div class="scroll-body">
+      ${debt > 0 ? `<div style="background:#ffd60a;color:#7a1f00;border-radius:14px;padding:14px 16px;margin-bottom:12px;font-weight:800;display:flex;justify-content:space-between;align-items:center">
+        <span>⚠️ Arretrato da riscuotere</span><span style="font-size:20px">${fmt(debt)}</span>
+      </div>` : ''}
       <div class="pay-row">
-        <span class="pl">Pagato oggi</span>
+        <span class="pl">Pagato oggi${debt > 0 ? ' (azzera arretrato)' : ''}</span>
         <label class="switch"><input type="checkbox" ${paidOn?'checked':''} onchange="togglePaid('${store.id}')"><span class="track"><span class="knob"></span></span></label>
       </div>
       <div class="field" style="margin-bottom:10px">
