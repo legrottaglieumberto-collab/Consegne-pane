@@ -349,6 +349,7 @@ let appCode = localStorage.getItem('appCode') || ''
 let myName = localStorage.getItem('myName') || ''
 let viewStoreId = null   // se valorizzato: vista NEGOZIO in sola lettura (punto 15)
 let viewDetailOpen = false
+let storeDebtOpen = false   // dettaglio arretrato aperto nella scheda negozio (B3)
 let currentPage = 'home'
 let currentStoreId = null
 let reportGiroId = null
@@ -696,6 +697,20 @@ function viewPastUnpaid(storeId) {
     .filter(d => d.storeId === storeId && d.accrued && !d.settled)
     .sort((a, b) => (b.ts || 0) - (a.ts || 0))
 }
+// Dettaglio dell'arretrato (data, prodotto, quantità, importo) per un negozio
+function debtBreakdownHtml(storeId) {
+  const past = viewPastUnpaid(storeId)
+  const byDate = {}
+  past.forEach(d => { (byDate[d.date] = byDate[d.date] || []).push(d) })
+  return Object.keys(byDate).sort((a, b) => dateNum(b) - dateNum(a)).map(date => {
+    const list = byDate[date]
+    const tot = list.reduce((s, d) => s + (parseFloat(d.amount) || 0), 0)
+    return `<div style="margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:#7a1f00;margin:8px 0 4px">📅 ${date} · ${fmt(tot)}</div>
+      ${list.map(d => `<div class="delivery-row"><div class="top"><span class="bread">${prodName(d.breadId)}</span><span class="amount">${fmt(d.amount)}</span></div><div class="meta"><span>${fmtQty(d.kg, prodUnit(d.breadId))}</span><span>${d.date}</span></div></div>`).join('')}
+    </div>`
+  }).join('') || '<div class="empty">—</div>'
+}
 // Segna come saldate le consegne arretrate di un negozio (quando paga)
 function settlePastDeliveries(storeId) {
   viewPastUnpaid(storeId).forEach(d => {
@@ -768,6 +783,7 @@ function termClass(term) {
 
 // ─── ROUTER ───────────────────────────────────────────────────────
 function goTo(page, storeId) {
+  if (page === 'store') storeDebtOpen = false   // il dettaglio arretrato parte chiuso
   currentPage = page
   if (storeId) currentStoreId = storeId
   render()
@@ -1232,9 +1248,12 @@ function renderStore() {
       <div class="term">${termLabel(store.paymentTerm)}</div>
     </div>
     <div class="scroll-body">
-      ${debt > 0 ? `<div style="background:#ffd60a;color:#7a1f00;border-radius:14px;padding:14px 16px;margin-bottom:12px;font-weight:800;display:flex;justify-content:space-between;align-items:center">
-        <span>⚠️ Arretrato da riscuotere</span><span style="font-size:20px">${fmt(debt)}</span>
-      </div>` : ''}
+      ${debt > 0 ? `<div style="background:#ffd60a;color:#7a1f00;border-radius:14px;padding:14px 16px;margin-bottom:${storeDebtOpen?'0':'12px'};font-weight:800;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="storeDebtOpen=!storeDebtOpen;render()">
+        <span>⚠️ Arretrato da riscuotere ${storeDebtOpen?'▴':'▾'}</span><span style="font-size:20px">${fmt(debt)}</span>
+      </div>
+      ${storeDebtOpen ? `<div style="background:#fff;border-radius:0 0 14px 14px;padding:10px 14px;margin-bottom:12px">
+        <div class="section-head" style="margin-top:0">Dettaglio (cosa deve ancora)</div>${debtBreakdownHtml(store.id)}
+      </div>` : ''}` : ''}
       <div class="pay-row">
         <span class="pl">Pagato oggi${debt > 0 ? ' (azzera arretrato)' : ''}</span>
         <label class="switch"><input type="checkbox" ${paidOn?'checked':''} onchange="togglePaid('${store.id}')"><span class="track"><span class="knob"></span></span></label>
