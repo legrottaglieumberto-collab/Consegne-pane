@@ -775,6 +775,7 @@ function renderShell() {
     home: renderHome,
     store: renderStore,
     report: renderReport,
+    storico: renderStorico,
     settings: renderSettings,
     editStore: renderEditStore,
     editPrices: renderEditPrices,
@@ -1518,10 +1519,70 @@ function renderReport() {
       </div>` : ''}
       ${cards || '<div class="empty">Nessuna consegna per questo periodo</div>'}
       ${cards ? `<button class="btn-secondary" onclick="copyReport()">📋 Copia resoconto da inviare</button>` : ''}
+      <button class="btn-add" onclick="goTo('storico')" style="margin-top:10px">📅 Storico giorni precedenti</button>
     </div>
     ${renderBottomNav()}
   </div>
   <textarea id="report-text" style="position:absolute;left:-9999px">${reportText}</textarea>`
+}
+// ─── STORICO GIORNI/GIRI PRECEDENTI (punto 4) ─────────────────────
+// I dati non si cancellano mai: qui si rivedono giri passati con negozi,
+// prodotti (qta+prezzo), totali e stato pagamento per negozio.
+function renderStorico() {
+  const giroList = Object.values(giros)
+    .filter(g => !g.personal || g.personal === myName)
+    .sort((a, b) => (b.ts || 0) - (a.ts || 0))
+  const cards = giroList.map(g => {
+    const gDelivs = Object.values(deliveries).filter(d => d.giroId === g.id)
+    if (!gDelivs.length) return ''
+    const giroTot = gDelivs.reduce((s, d) => s + (parseFloat(d.amount) || 0), 0)
+    const storeIds = [...new Set(gDelivs.map(d => d.storeId))]
+    const storesHtml = storeIds.map(sid => {
+      const st = stores[sid]
+      const sd = gDelivs.filter(d => d.storeId === sid)
+      const sTot = sd.reduce((s, d) => s + (parseFloat(d.amount) || 0), 0)
+      const allSettled = sd.every(d => d.settled)
+      const anyUnpaid = sd.some(d => d.accrued && !d.settled)
+      const status = allSettled ? '<span class="who-badge who-2">Pagato ✓</span>'
+        : anyUnpaid ? '<span class="who-badge" style="background:#ffd60a;color:#7a1f00">Da pagare</span>'
+        : '<span class="who-badge who-1">In corso</span>'
+      const byBread = {}
+      sd.forEach(d => {
+        if (!byBread[d.breadId]) byBread[d.breadId] = {kg: 0, amount: 0}
+        byBread[d.breadId].kg += parseFloat(d.kg) || 0
+        byBread[d.breadId].amount += parseFloat(d.amount) || 0
+      })
+      const prodRows = Object.entries(byBread).map(([bid, bd]) =>
+        `<div class="report-row"><span class="rleft">${prodName(bid)}</span><span class="rright">${fmtQty(bd.kg, prodUnit(bid))} · ${fmt(bd.amount)}</span></div>`
+      ).join('')
+      return `<div style="border-top:0.5px solid #eee;padding-top:8px;margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-weight:700">${st ? st.name : sid} ${status}</span>
+          <span style="font-weight:700;color:#D85A30">${fmt(sTot)}</span>
+        </div>
+        ${prodRows}
+      </div>`
+    }).join('')
+    return `<div class="report-card" style="padding:12px 14px">
+      <div class="rhead" style="padding:0 0 6px 0">
+        <span class="rname">${g.name}</span>
+        <span class="rtotal">${fmt(giroTot)}</span>
+      </div>
+      ${storesHtml}
+    </div>`
+  }).join('')
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <div class="topbar-row">
+        <button class="back-btn" onclick="goTo('report')">←</button>
+        <div style="flex:1"><h1>Storico</h1><div class="sub">Giorni e giri precedenti · i dati non si cancellano mai</div></div>
+      </div>
+    </div>
+    <div class="scroll-body">
+      ${cards || '<div class="empty">Ancora nessun giro nello storico.</div>'}
+    </div>
+    ${renderBottomNav()}
+  </div>`
 }
 function copyReport() {
   const el = document.getElementById('report-text')
@@ -1986,7 +2047,7 @@ function renderBottomNav() {
     {page:'report',label:'Resoconto',icon:`<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>`},
     {page:'settings',label:'Impostazioni',icon:`<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>`},
   ]
-  const activePage = ['editStore','editPrices','editStandard','editTeam'].includes(currentPage) ? 'settings' : ['store','newGiro','manageGiro','giri'].includes(currentPage) ? 'home' : currentPage
+  const activePage = ['editStore','editPrices','editStandard','editTeam'].includes(currentPage) ? 'settings' : ['store','newGiro','manageGiro','giri'].includes(currentPage) ? 'home' : currentPage === 'storico' ? 'report' : currentPage
   return `<nav class="bottomnav">
     ${navItems.map(n => `
       <button class="nav-btn ${activePage === n.page ? 'active' : ''}" onclick="goTo('${n.page}')">
