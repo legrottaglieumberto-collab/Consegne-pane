@@ -94,10 +94,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .who-3{background:#f3f0fd;color:#5b3fc7}
 
 /* FAB */
-.fab{position:fixed;bottom:74px;right:16px;width:72px;height:72px;background:#D85A30;border-radius:50%;border:none;color:#fff;font-size:42px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(216,90,48,0.5);z-index:100;line-height:1}
-.fab:active{background:#bf4a24}
-.fab-fine{position:fixed;bottom:80px;right:100px;height:56px;padding:0 22px;background:#fff;color:#2a7a2a;border:2px solid #2a7a2a;border-radius:28px;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 3px 10px rgba(0,0,0,0.15);z-index:100}
-.fab-fine:active{background:#f3faf3}
+.fab{position:fixed;bottom:78px;right:14px;width:88px;height:88px;background:#D85A30;border-radius:50%;border:none;color:#fff;font-size:60px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(216,90,48,0.55);z-index:100;line-height:1}
+.fab:active{background:#bf4a24;transform:scale(0.94)}
+.fab-fine{position:fixed;bottom:85px;right:118px;height:74px;padding:0 30px;background:#1E7A3A;color:#fff;border:none;border-radius:37px;font-size:22px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 6px 16px rgba(30,122,58,0.45);z-index:100}
+.fab-fine:active{background:#176030;transform:scale(0.96)}
 
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:none;align-items:flex-end}
@@ -347,6 +347,8 @@ function breadIcon(id) {
 // ─── STATE ────────────────────────────────────────────────────────
 let appCode = localStorage.getItem('appCode') || ''
 let myName = localStorage.getItem('myName') || ''
+let viewStoreId = null   // se valorizzato: vista NEGOZIO in sola lettura (punto 15)
+let viewDetailOpen = false
 let currentPage = 'home'
 let currentStoreId = null
 let reportGiroId = null
@@ -408,6 +410,26 @@ function decodeSnapshot(str) {
 }
 function buildShareLink() {
   return 'https://legrottaglieumberto-collab.github.io/Consegne-pane/#d=' + encodeSnapshot(buildSnapshot())
+}
+// ─── VISTA NEGOZIO IN SOLA LETTURA (punto 15) ─────────────────────
+// Link personale per il negoziante: porta codice gruppo + id negozio.
+function storeViewLink(storeId) {
+  const payload = encodeURIComponent(btoa(unescape(encodeURIComponent(appCode + '|' + storeId))))
+  return 'https://legrottaglieumberto-collab.github.io/Consegne-pane/#v=' + payload
+}
+// All'avvio: se il link è di tipo "vista negozio", entra in sola lettura.
+function tryStoreView() {
+  const m = (location.hash || '').match(/[#&]v=([^&]+)/)
+  if (!m) return false
+  try {
+    const s = decodeURIComponent(escape(atob(decodeURIComponent(m[1]))))
+    const [code, sid] = s.split('|')
+    if (!code || !sid) return false
+    appCode = code           // NON salvato in localStorage: sessione di sola lettura
+    viewStoreId = sid
+    history.replaceState(null, '', location.pathname + location.search)
+    return true
+  } catch (e) { return false }
 }
 // All'avvio: se il link contiene uno snapshot, importalo (gruppo + lista + prezzi)
 function tryImportFromLink() {
@@ -615,7 +637,7 @@ function togglePaid(storeId, ev) {
   const v = !isPaid(storeId)
   paid[storeId] = {date: today(), paid: v}
   if (paidNode) paidNode.get(storeId).put({date: today(), paid: v})
-  if (v) setBalance(storeId, 0)   // ha saldato: azzera l'arretrato
+  if (v) { setBalance(storeId, 0); settlePastDeliveries(storeId) }   // ha saldato: azzera l'arretrato
   toast(v ? '✓ Pagato, saldo azzerato' : 'Segnato non pagato')
   render()
 }
@@ -645,6 +667,19 @@ function deliveredOn(storeId, dateStr) {
     .filter(d => d.storeId === storeId && d.date === dateStr)
     .reduce((s, d) => s + (parseFloat(d.amount) || 0), 0)
 }
+// Consegne dei giorni passati non ancora saldate (compongono l'arretrato)
+function viewPastUnpaid(storeId) {
+  return Object.values(deliveries)
+    .filter(d => d.storeId === storeId && d.accrued && !d.settled)
+    .sort((a, b) => (b.ts || 0) - (a.ts || 0))
+}
+// Segna come saldate le consegne arretrate di un negozio (quando paga)
+function settlePastDeliveries(storeId) {
+  viewPastUnpaid(storeId).forEach(d => {
+    deliveries[d.id] = {...d, settled: true}
+    if (deliveriesNode) deliveriesNode.get(d.id).put({settled: true})
+  })
+}
 function wasPaidOn(storeId, dateStr) {
   const p = paid[storeId]
   return !!(p && p.date === dateStr && p.paid)
@@ -661,6 +696,7 @@ function dateNum(s) {
 //  - il giro del giorno prima viene chiuso → home pulita.
 // Le consegne restano nello storico (resoconto filtra per data).
 function checkDailyReset() {
+  if (viewStoreId) return   // vista negozio = sola lettura, mai scritture/reset
   const td = today()
   let startDate = localStorage.getItem('balanceStart_' + appCode)
   if (!startDate) { startDate = td; localStorage.setItem('balanceStart_' + appCode, td) }
@@ -670,12 +706,14 @@ function checkDailyReset() {
   Object.values(deliveries).forEach(d => {
     const dn = dateNum(d.date)
     if (dn && dn < tdN && dn >= startN && !d.accrued) {
-      if (!wasPaidOn(d.storeId, d.date)) {
+      const wasPaid = wasPaidOn(d.storeId, d.date)
+      if (!wasPaid) {
         setBalance(d.storeId, balanceFor(d.storeId) + (parseFloat(d.amount) || 0))
         changed = true
       }
-      deliveries[d.id] = {...d, accrued: true}
-      if (deliveriesNode) deliveriesNode.get(d.id).put({accrued: true})
+      // accrued = conteggiata; settled = già pagata quel giorno (non è arretrato)
+      deliveries[d.id] = {...d, accrued: true, settled: wasPaid}
+      if (deliveriesNode) deliveriesNode.get(d.id).put({accrued: true, settled: wasPaid})
     }
   })
   if (last && last !== td) {
@@ -715,6 +753,7 @@ function goTo(page, storeId) {
 // ─── RENDER ───────────────────────────────────────────────────────
 function render() {
   const app = document.getElementById('app')
+  if (viewStoreId) { app.innerHTML = renderStoreView(); bindEvents(); return }
   if (!appCode) { app.innerHTML = renderSetup(); return }
   if (!myName) { app.innerHTML = renderLogin(); return }
   // Mantieni la posizione di scorrimento quando resti sulla stessa schermata
@@ -1046,6 +1085,67 @@ function deleteGiro(id) {
   render()
 }
 
+// ─── VISTA NEGOZIO IN SOLA LETTURA (punto 15) ─────────────────────
+function renderStoreView() {
+  const store = stores[viewStoreId]
+  if (!store) {
+    return `<div class="page active" style="display:flex;flex-direction:column">
+      <div class="topbar"><h1>Consegne Pane</h1><div class="sub">Vista negozio · sola lettura</div></div>
+      <div class="scroll-body"><div class="empty">Sto caricando i tuoi dati…<br>Se non compare nulla, controlla il link ricevuto dal fornitore.</div></div>
+    </div>`
+  }
+  const todayDelivs = Object.values(deliveries).filter(d => d.storeId === viewStoreId && d.date === today()).sort((a,b) => (b.ts||0)-(a.ts||0))
+  const todayTot = todayDelivs.reduce((s,d) => s + (parseFloat(d.amount)||0), 0)
+  const arretrato = balanceFor(viewStoreId)
+  const totale = todayTot + arretrato
+  const past = viewPastUnpaid(viewStoreId)
+
+  const delivRow = (d) => `<div class="delivery-row">
+      <div class="top"><span class="bread">${prodName(d.breadId)}</span><span class="amount">${fmt(d.amount)}</span></div>
+      <div class="meta"><span>${fmtQty(d.kg, prodUnit(d.breadId))}</span><span>${d.date}${d.time?' · '+d.time:''}</span></div>
+    </div>`
+
+  const byDate = {}
+  past.forEach(d => { (byDate[d.date] = byDate[d.date] || []).push(d) })
+  const pastDetail = Object.keys(byDate).sort((a,b) => dateNum(b)-dateNum(a)).map(date => {
+    const list = byDate[date]
+    const tot = list.reduce((s,d) => s + (parseFloat(d.amount)||0), 0)
+    return `<div style="margin-bottom:8px">
+      <div style="font-size:12px;font-weight:700;color:#7a1f00;margin:8px 0 4px">📅 ${date} · ${fmt(tot)}</div>
+      ${list.map(delivRow).join('')}
+    </div>`
+  }).join('')
+
+  const arrClickable = arretrato > 0
+  const arrBox = `<div style="flex:1;background:${arrClickable?'#ffd60a':'#fff'};border-radius:12px;padding:12px;text-align:center;${arrClickable?'cursor:pointer':''}" ${arrClickable?'onclick="viewDetailOpen=!viewDetailOpen;render()"':''}>
+      <div style="font-size:12px;color:${arrClickable?'#7a1f00':'#888'}">Arretrato${arrClickable?(viewDetailOpen?' ▴':' ▾'):''}</div>
+      <div style="font-size:18px;font-weight:800;color:${arrClickable?'#7a1f00':'#1a1a1a'}">${fmt(arretrato)}</div>
+    </div>`
+
+  return `<div class="page active" style="display:flex;flex-direction:column">
+    <div class="topbar">
+      <h1>${store.name}</h1>
+      <div class="sub">👁️ Sola lettura · solo i tuoi dati · si aggiorna da solo</div>
+    </div>
+    <div class="store-hero" style="background:#1E7A3A">
+      <div class="amount">${fmt(totale)}</div>
+      <div class="label">Totale da pagare</div>
+    </div>
+    <div class="scroll-body">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <div style="flex:1;background:#fff;border-radius:12px;padding:12px;text-align:center"><div style="font-size:12px;color:#888">Oggi</div><div style="font-size:18px;font-weight:800;color:#1a1a1a">${fmt(todayTot)}</div></div>
+        ${arrBox}
+      </div>
+      ${arrClickable && viewDetailOpen ? `<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:14px">
+        <div class="section-head" style="margin-top:0">Dettaglio arretrato (cosa devi ancora)</div>${pastDetail || '<div class="empty">—</div>'}
+      </div>` : ''}
+      <div class="section-head">Consegne di oggi</div>
+      ${todayDelivs.length ? todayDelivs.map(delivRow).join('') : '<div class="empty">Nessuna consegna oggi (ancora)</div>'}
+      <div style="height:20px"></div>
+    </div>
+  </div>`
+}
+
 // ─── STORE DETAIL ─────────────────────────────────────────────────
 function renderStore() {
   const store = stores[currentStoreId]
@@ -1192,7 +1292,7 @@ function renderDeliveryModal() {
         <button class="modal-close" onclick="closeDelivery()">✕</button>
       </div>
       <div class="modal-body">
-        <div class="section-head">Prodotto ${!isEdit ? '— poi tocca la quantità per confermare' : ''}</div>
+        <div class="section-head">Prodotti ${!isEdit ? '— scegli il prodotto, poi la quantità' : ''}</div>
         ${breadItems}
         <div class="section-head" style="margin-top:16px">${unit==='pz'?'Quante confezioni?':'Quanti kg?'} ${selBread ? '(tocca per confermare)' : '(prima scegli il prodotto)'}</div>
         <div class="weight-section">
@@ -1202,20 +1302,23 @@ function renderDeliveryModal() {
           </div>
         </div>
         <div class="total-preview">
-          <span class="label">Totale questa consegna</span>
+          <span class="label">Totale prodotto selezionato</span>
           <span class="amount">${fmt(total)}</span>
         </div>
         <div class="total-preview" style="background:#fff;color:#1a1a1a;border:1.5px solid #D85A30">
           <span class="label" style="opacity:1;color:#888">Totale ${store ? store.name : 'negozio'}</span>
           <span class="amount" style="color:#D85A30">${fmt(storeTotal(currentStoreId) + (isEdit ? 0 : total))}</span>
         </div>
-        ${isEdit ? `
-        <button class="btn-confirm" ${canConfirm ? '' : 'disabled'} onclick="confirmDelivery()" style="margin-bottom:10px">Salva modifiche</button>
-        <button class="btn-delete" onclick="deleteDelivery()">🗑 Elimina questa consegna</button>
-        ` : ''}
+        <button class="btn-confirm" onclick="finishDelivery()" style="font-size:19px;padding:19px;margin-bottom:10px">✓ Fine</button>
+        ${isEdit ? `<button class="btn-delete" onclick="deleteDelivery()">🗑 Elimina questa consegna</button>` : ''}
       </div>
     </div>
   </div>`
+}
+// 'Fine' nel modal: se prodotto+quantità sono scelti salva, poi torna alla scheda
+function finishDelivery() {
+  if (selBread && parseFloat(weightStr) > 0) { confirmDelivery(); return }
+  closeDelivery()
 }
 
 function openDelivery(id) {
@@ -1579,6 +1682,23 @@ function shareCode() {
     toast('Link copiato (con lista e prezzi) ✓')
   }
 }
+function shareStoreView(storeId) {
+  const store = stores[storeId]
+  const link = storeViewLink(storeId)
+  const txt = (store ? store.name : 'Negozio') + ' — da qui controlli le tue consegne e quanto devi pagare (solo lettura): ' + link
+  if (navigator.share) {
+    navigator.share({title: 'Consegne Pane', text: txt}).catch(() => {})
+  } else {
+    const ta = document.createElement('textarea')
+    ta.value = txt
+    ta.style.position = 'fixed'; ta.style.left = '-9999px'
+    document.body.appendChild(ta)
+    ta.select()
+    try { document.execCommand('copy') } catch(e) {}
+    document.body.removeChild(ta)
+    toast('Link per il negoziante copiato ✓')
+  }
+}
 function copyCode() {
   const ta = document.createElement('textarea')
   ta.value = appCode
@@ -1625,6 +1745,7 @@ function renderEditStore() {
       ${!isNew ? `
         <button class="btn-confirm" style="background:#fff;color:#D85A30;border:1.5px solid #D85A30;margin-top:10px" onclick="saveStore();goTo('editPrices','${store.id}')">🍞 Tipi di pane e prezzi</button>
         <button class="btn-confirm" style="background:#fff;color:#D85A30;border:1.5px solid #D85A30;margin-top:10px" onclick="saveStore();goTo('editStandard','${store.id}')">📥 Quantitativi standard del mattino</button>
+        <button class="btn-confirm" style="background:#fff;color:#1E7A3A;border:1.5px solid #1E7A3A;margin-top:10px" onclick="shareStoreView('${store.id}')">👁️ Codice per il negoziante (sola lettura)</button>
         <button class="btn-delete" onclick="deleteStore('${store.id}')">Elimina negozio</button>
       ` : ''}
     </div>
@@ -1882,8 +2003,12 @@ function bindEvents() {
 }
 
 // ─── START ────────────────────────────────────────────────────────
-tryImportFromLink()
-if (appCode) initGun()
+if (tryStoreView()) {
+  initGun()              // vista negozio: sola lettura, niente reset/scritture
+} else {
+  tryImportFromLink()
+  if (appCode) initGun()
+}
 render()
 </script>
 </body>
