@@ -641,6 +641,29 @@ function togglePaid(storeId, ev) {
   toast(v ? '✓ Pagato, saldo azzerato' : 'Segnato non pagato')
   render()
 }
+// Reinizializza 'Pagato' a OFF per i negozi appena messi in un nuovo giro
+// (mai ereditare il pagato di un giro precedente — punto 16a)
+function resetPaidForStores(ids) {
+  ids.forEach(sid => {
+    paid[sid] = {date: today(), paid: false}
+    if (paidNode) paidNode.get(sid).put({date: today(), paid: false})
+  })
+}
+// Azzera manualmente i dati di OGGI di un negozio (punto 16c).
+// Mantiene: saldo arretrato (debiti), note, quantitativi standard.
+function clearStoreToday(storeId) {
+  const st = stores[storeId]
+  if (!confirm('Vuoi azzerare i dati di OGGI per ' + (st ? st.name : 'questo negozio') + '?\n\nRestano salvati il saldo arretrato (debiti), le note e i quantitativi standard.')) return
+  curDeliveries().filter(d => d.storeId === storeId).forEach(d => {
+    deliveriesNode.get(d.id).put(null)
+    delete deliveries[d.id]
+  })
+  paid[storeId] = {date: today(), paid: false}
+  if (paidNode) paidNode.get(storeId).put({date: today(), paid: false})
+  publishSnapshot()
+  toast('Scheda di oggi azzerata')
+  render()
+}
 // Totale da riscuotere OGGI: solo negozi del giro con frequenza Giornaliero
 function totalDaRiscuotere() {
   const giro = activeGiro()
@@ -946,8 +969,12 @@ function saveManageGiro() {
   const ids = Object.keys(giroSel).filter(k => giroSel[k])
   const gid = currentActiveGiroId()
   if (!gid) { goTo('home'); return }
+  const before = giros[gid] ? giroStoreIds(giros[gid]) : []
+  const added = ids.filter(id => !before.includes(id))
   girosNode.get(gid).put({storeIds: ids.join(',')})
   if (giros[gid]) giros[gid].storeIds = ids.join(',')
+  if (added.length) resetPaidForStores(added)   // i nuovi partono 'Pagato?' (16a)
+  publishSnapshot()
   toast('Negozi del giro aggiornati ✓')
   goTo('home')
 }
@@ -1000,6 +1027,7 @@ function startGiro() {
   }
   giros[id] = {...giro, id}   // aggiorna subito in locale: la home trova il giro senza aspettare Gun
   girosNode.get(id).put(giro)
+  resetPaidForStores(ids)     // nuovo giro = ogni negozio parte 'Pagato?' (16a)
   publishSnapshot()           // salva il giro anche nello snapshot durevole
   if (newGiroPersonal) {
     personalActiveGiroId = id
@@ -1226,7 +1254,8 @@ function renderStore() {
       </div>` : ''}
       <div class="section-head">Consegne di oggi</div>
       ${delivRows || '<div class="empty">Nessuna consegna ancora</div>'}
-      <div style="height:70px"></div>
+      <button class="btn-delete" style="margin-top:16px" onclick="clearStoreToday('${store.id}')">🧹 Azzera scheda (dati di oggi)</button>
+      <div style="height:90px"></div>
     </div>
     <button class="fab-fine" onclick="goTo('home')">✓ Fine</button>
     <button class="fab" onclick="openDelivery()">+</button>
