@@ -433,16 +433,26 @@ function tryImportFromLink() {
 // il codice riceve subito negozi + prezzi + team in un colpo solo.
 function publishSnapshot() {
   if (!snapshotNode) return
-  try { snapshotNode.put({ json: JSON.stringify({ s: stores, p: prices, q: standards, t: team }) }) } catch (e) {}
+  try { snapshotNode.put({ json: JSON.stringify({ s: stores, p: prices, q: standards, t: team, g: giros, d: recentDeliveries() }) }) } catch (e) {}
 }
-function applySnapshot(d) {
-  if (!d || !d.json) return
+// Consegne degli ultimi ~120 giorni (per non far crescere troppo lo snapshot)
+function recentDeliveries() {
+  const cut = Date.now() - 120 * 86400000
+  const out = {}
+  Object.entries(deliveries).forEach(([id, d]) => { if (!d.ts || d.ts > cut) out[id] = d })
+  return out
+}
+function applySnapshot(snap) {
+  if (!snap || !snap.json) return
   try {
-    const o = JSON.parse(d.json)
+    const o = JSON.parse(snap.json)
     if (o.s) Object.entries(o.s).forEach(([id, st]) => { if (!stores[id]) stores[id] = { ...st, id } })
     if (o.p) Object.entries(o.p).forEach(([sid, bp]) => { prices[sid] = { ...(prices[sid] || {}), ...bp } })
     if (o.q) Object.entries(o.q).forEach(([sid, qp]) => { standards[sid] = { ...(standards[sid] || {}), ...qp } })
     if (o.t && o.t.length && !team.length) team = o.t
+    // giri e consegne: ripristina quelli mancanti (recupero dopo perdita dal relay)
+    if (o.g) Object.entries(o.g).forEach(([id, g]) => { if (!giros[id]) giros[id] = { ...g, id } })
+    if (o.d) Object.entries(o.d).forEach(([id, dd]) => { if (!deliveries[id]) deliveries[id] = { ...dd, id } })
     render()
   } catch (e) {}
 }
@@ -477,8 +487,10 @@ function initGun() {
   // reset di inizio giornata (usa la cache locale appena caricata)
   checkDailyReset()
 
+  // NB: per giri e consegne NON cancelliamo su null da Gun: un relay pubblico
+  // inaffidabile potrebbe mandare null e farci perdere lo storico. Le
+  // cancellazioni vere avvengono in locale (deleteGiro/deleteDelivery).
   girosNode.map().on((data, id) => {
-    if (data === null) { delete giros[id]; render(); return }
     if (data && id) { giros[id] = {...data, id}; render() }
   })
   activeNode.on((data) => {
@@ -490,7 +502,6 @@ function initGun() {
     if (data && id) { stores[id] = {...data, id}; render() }
   })
   deliveriesNode.map().on((data, id) => {
-    if (data === null) { delete deliveries[id]; render(); return }
     if (data && id) { deliveries[id] = {...data, id}; render() }
   })
   teamNode.on((data) => {
@@ -949,6 +960,7 @@ function startGiro() {
   }
   giros[id] = {...giro, id}   // aggiorna subito in locale: la home trova il giro senza aspettare Gun
   girosNode.get(id).put(giro)
+  publishSnapshot()           // salva il giro anche nello snapshot durevole
   if (newGiroPersonal) {
     personalActiveGiroId = id
     localStorage.setItem('personalActiveGiroId', id)
@@ -1021,11 +1033,15 @@ function activateGiro(id) {
 }
 function deleteGiro(id) {
   if (!confirm('Cancellare questo giro? Le consegne registrate in questo giro verranno rimosse.')) return
-  Object.values(deliveries).filter(d => d.giroId === id).forEach(d => deliveriesNode.get(d.id).put(null))
+  Object.values(deliveries).filter(d => d.giroId === id).forEach(d => {
+    deliveriesNode.get(d.id).put(null)
+    delete deliveries[d.id]   // cancella anche in locale (non ci affidiamo piu ai null di Gun)
+  })
   girosNode.get(id).put(null)
   delete giros[id]
   if (activeGiroId === id) { activeNode.put({giroId: ''}); activeGiroId = null }
   if (personalActiveGiroId === id) { personalActiveGiroId = null; localStorage.removeItem('personalActiveGiroId') }
+  publishSnapshot()
   toast('Giro cancellato')
   render()
 }
@@ -1138,6 +1154,7 @@ function loadStandard(storeId) {
       deliveriesNode.get(id).put(rec)
     }
   })
+  publishSnapshot()
   toast('Quantitativi standard caricati ✓')
   render()
 }
@@ -1262,6 +1279,7 @@ function confirmDelivery() {
   }
   window._deliveryOpen = false
   editDeliveryId = null
+  publishSnapshot()   // salva la consegna anche nello snapshot durevole
   goTo('store')
 }
 function deleteDelivery() {
@@ -1269,6 +1287,7 @@ function deleteDelivery() {
   if (!confirm('Eliminare questa consegna?')) return
   deliveriesNode.get(editDeliveryId).put(null)
   delete deliveries[editDeliveryId]
+  publishSnapshot()
   toast('Consegna eliminata')
   closeDelivery()
 }
